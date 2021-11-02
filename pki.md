@@ -30,16 +30,46 @@ of an NDF (network definition file) and a Rounds structure.
 
 ## Network component interactions with the PKI:
 
-Here we include some samples of our gRPC schema:
+The complete gRPC schema can be found here:
 
- - Client
+https://git.xx.network/elixxir/comms/-/blob/release/mixmessages/mixmessages.proto
 
- - Gateway
 
- - Node
+Here we have the NDF which is opaque because it's signed:
 
-## Citations and links
+	// The Network Definition File is defined as a
+	// JSON structure in primitives/ndf. Can be provided in a
+	// "complete" and "incomplete" format. An incomplete
+	// NDF is provided to level 4 (ie clients) to protect the inner levels
+	message NDF{
+		bytes Ndf = 1;
+		messages.RSASignature Signature = 2;
+	}
 
-	Include links to the official documentation about the “PKI”
+Whereas the inner NDF structure is defined elsewhere ( https://gitlab.com/xx_network/primitives/-/blob/release/ndf/ndf.go ) :
+
+	// NetworkDefinition structure hold connection and network information. It
+	// matches the JSON structure generated in Terraform.
+	type NetworkDefinition struct {
+		Timestamp     time.Time
+		Gateways      []Gateway
+		Nodes         []Node
+		Registration  Registration
+		Notification  Notification
+		UDB           UDB   `json:"Udb"`
+		E2E           Group `json:"E2e"`
+		CMIX          Group `json:"Cmix"`
+		AddressSpace  []AddressSpace
+		ClientVersion string 	// Ids that bypass rate limiting
+		WhitelistedIds []string 	// Ips that bypass rate limiting
+		WhitelistedIpAddresses []string 	//Details on how gateways will rate limit clients
+		RateLimits RateLimiting
+	}
+
+
+
+## The Future Decentralized PKI
+
+	Here we should include links to the documentation about the “PKI”
     blockchain consensus BFT protocols that we are using for the
     future decentralized PKI system
