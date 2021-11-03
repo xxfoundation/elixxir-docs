@@ -1,5 +1,5 @@
 
-# Elixir Mixnet PKI
+# Elixxir Mixnet PKI
 
 ## Introduction
 
