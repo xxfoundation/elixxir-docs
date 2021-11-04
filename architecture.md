@@ -34,6 +34,12 @@ The Elixxir mix network has several components:
 	- mix nodes
 	- PKI infrastructure
 
+All components exchange information with the PKI so that public key
+material and connectivity information is published. Mix nodes are
+arranged into many mix cascades. Clients can only communicate with
+the gateways. Gateways route client message onto the correct mix
+cascade. The terminating hop of the mix cascade routes messages to the
+gateways.
 
 
 ## Elixxir has a modular design with the intent for general purpose usage
@@ -65,7 +71,7 @@ for adversaries who are passively watching the network.
 In the case of Elixxir's cMIx mixing strategy, messages are
 mixed in fixed size batches of messages at predetermined mixing rounds.
 
-### Anytrust
+### The Anytrust Model
 
 Given a fixed route that a mixnet message must follow, the route is
 only compromised if all of the mixes in the route are compromised.
