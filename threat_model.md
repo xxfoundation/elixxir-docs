@@ -58,20 +58,118 @@ Currently Elixxir does not make use of any decoy traffic and that
 is why it does not provide any of the "Unobservability" notions
 for either senders or receivers.
 
-### Mixnet Attacks and Defenses
+## Mixnet Attacks and Defenses
 
 All mixnets have attacks that are in each of these categories. In this
 section we enumerate our defenses or partial defenses for attacks
 in each of these categories.
 
- - Epistemic attacks: Epistemic attacks are attacks conducted by an adversary who uses their knowledge of the target to their advantage. In the classical ACN literature examples of these attacks are described where the mixnet PKI information about all the mix nodes is not uniformly distributed among the clients. The Adversary can identify clients based on their usage of the network.
+### Compulsion attacks
 
- - Tagging attacks
+In this case compulsion attacks refer to situations where the adversary
+compells mix operators to hand over their private cryptographic key material
+or to compromise the mix in some way. In the case of Elixxir, the route is whatever mix
+cascade the client happens to be using. The adversary needs to compromise
+all the mixes in the cascade in order to successfully link the ingress messages
+with the egress messages.
 
- - N-1 attacks
- - Long term statistical disclosure attacks (aka intersection attack)
- - Short term statistical disclosure attacks (e.g. packet timing correlation attacks work against Tor but not against a well designed mixnet)
+Elixxir tries to protect against the compulsion attack in two primary ways:
 
- - Compulsion attacks: 
+1. The PKI selects mix nodes for composing cascade which are geographically
+distant from one another.
 
- - High-level protocol traffic correlation attacks
+2. Mix cascades are only used for a short period of time. The PKI is
+continually generating more mix cascades and publishing them to the
+network. Adversaries cannot predict what a future cascade will be.
+
+In some circumstances the compulsion attack may involve breaking some
+cryptographic protocol. Therefore the addition of the cryptographic
+wire protocol (Elixxir uses TLS) should make such cryptographic compulsion
+attacks more difficult or non-viable.
+
+### Epistemic attacks
+ 
+Epistemic attacks are attacks conducted by an adversary who uses
+their knowledge of the target to their advantage. In the classical
+ACN literature examples of these attacks are described where the
+network PKI information about all the network nodes is not uniformly
+distributed among the clients. The Adversary can identify clients
+based on their usage of the network.
+
+In our case simply by watching the mixnet traffic, one can learn the
+mix cascade that a given target client is using. Clients however do
+not send messages directly to their cascade. They send the message to
+a gateway node which relays the message to the cascade; however gateways
+only make use of one cascade and so it's trivial for a global passive
+adversary to determine which cascade a given client is using. Therefore
+the Elixxir mixnet anonymity set size is fixed as the number of slots
+per message batch.
+
+All that having been said, an advantageous design would be able to
+increase the anonymity set size linearly with the number of clients
+using the network as would be the case if the gateway servers formed
+another layer of mixing. This would be a good approach if we can
+overcome some of the associated engineering challenges.
+
+### Tagging attacks
+
+In the classical mixnet literature tagging attacks usually refer to attacks
+where the adversary can discovery at least a 1-bit flip for confirmation.
+Whereas these bit flipping related confirmation attacks do not apply to
+non-cryptographically-malleable mixnet message formats.
+
+All that having been said, for cMix and thus the Elixxir mixnet, there
+is a group homomorphic kind of tagging attack. In this case the first
+and last hop can collaborate: The first hop adds the tag by
+modulo-multiplying the tag by the message ciphertext. The last hop can
+check for the presence of the can and then remove the tag by
+modulo-multiplying the message by the tag inverse.
+
+**Is this correct?**
+
+### N-1 attacks
+
+An N-1 attack is a category of mixnet specific attacks where the
+adversary controls all but one message which is being mixed. Elixxir
+uses the cMix mixing strategy which has a fixed number of message
+slots. However a timing schedule is imposed where gateways fill
+message slots with dummy messages if not enough messages were received
+before the mixing round deadline. An N-1 attack that would work
+against the Elixxir mixnet would be as follows:
+
+   The adversary awaits the new mixing round and then fills all but
+   one message slot with his own messages. The final message slot is
+   then reserved for the target client. The adversary may drop or
+   delay messages if a non-target client submits a message. It would
+   be obvious to the adversary which output message was sent by the
+   target client.
+
+In the context of Elixxir we are using fixed predetermined cascades of
+mixes therefore performing such an attack on the entry mix node gets
+us the results when all the messages exit the cascade.
+
+**What is the Elixxir defense to this attack?**
+
+### statistical disclosure attacks
+
+#### Short term statistical disclosure attacks
+
+These attacks don't apply to mixnets. Short term attacks should be
+prevented by the mixing strategy which adds latency and bitwise
+unlinkability creating uncertainty for the global passive adversary
+who is trying to link input and output messages for each mix in the route.
+
+#### Long term statistical disclosure attacks (aka intersection attack)
+
+Long term statistical disclosure attacks on mixnets are certainly
+viable in the general sense. However whether or not such attacks will
+succeed is very much dependent on client behavior because highly
+repetetive and predictable behavior makes it easier for the adversary.
+
+### High-level protocol traffic correlation attacks
+
+It is possible that layering protocols on top of mixnet protocols results
+in unexpected emergent behavior that cancels out the privacy notions of the mixnet
+by leaking additional statistical information. The Elixxir development team currently
+believes their existing mixnet protocols are simple enough that there is no unknown
+emergent behavior which would cause additional privacy leaks.
