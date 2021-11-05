@@ -5,54 +5,62 @@
 
 As of this writing the Elixxir mixnet only has one application, an end
 to end encrypted chat client which does one on one and group chat.
-However the Elixxir mixnet is designed for general purpose usage. It can
-support a wide variety of applications. We may end up designing
+However the Elixxir mixnet is designed for general purpose usage. It
+can support a wide variety of applications. We may end up designing
 several mixnet protocols to support these various applications. Each
 of these protocols will have different security and privacy
 properties. The purpose of this document is to describe the threat
-model for the entire mix network and it's basic protocol which is
-to be augmented by protocol composition for each specific mixnet protocol.
+model for the entire mix network and it's basic protocol which is to
+be augmented by protocol composition for each specific mixnet
+protocol.
 
 ## Security
 
-As mentioned in the [architectural overview document](architecture.md), the PKI
-system is the root of all authority in the mix network. The anonymity privacy
-and security properties of the mixnet very much depend on the security of the PKI.
-If the PKi is compromised, the adversary can swap out the old mix cascades for his
-own mix cascades where the adversary knows all the mix private keys and can
-therefore link senders and receivers. 
+As mentioned in the [architectural overview
+document](architecture.md), the PKI system is the root of all
+authority in the mix network. The anonymity privacy and security
+properties of the mixnet very much depend on the security of the PKI.
+If the PKi is compromised, the adversary can swap out the old mix
+cascades for his own mix cascades where the adversary knows all the
+mix private keys and can therefore link senders and receivers.
 
-As mentioned in the [link layer document](link_layer.md), our TLS link layer is
-used to encrypt all communications between each component of the network.
+As mentioned in the [link layer document](link_layer.md), our TLS link
+layer is used to encrypt all communications between each component of
+the network.
 
-The cMix encryption is composed on the clients and terminates on the last mix node.
-The last mix node in a given route forwards the messages to the destination service on
-the gateway system. These messages are not protected with the cMix encryption. For some
-applications this is perfectly acceptable. However for encrypted chat the client side
-must use end to end encryption to protect the confidentiality of the messages.
+The cMix encryption is composed on the clients and terminates on the
+last mix node.  The last mix node in a given route forwards the
+messages to the destination service on the gateway system. These
+messages are not protected with the cMix encryption. For some
+applications this is perfectly acceptable. However for encrypted chat
+the client side must use end to end encryption to protect the
+confidentiality of the messages.
 
 ## Privacy
 
 ## Anonymity Set
 
-The Elixxir mix network does notion to hide which mix cascade a given client is using.
-Clients directly connect to gateways nodes which relay messages to the mix cascade.
-These gateways are only connected to one mix cascade so it's trivial for the
-global passive adversary determine the cascade.
+The Elixxir mix network does notion to hide which mix cascade a given
+client is using.  Clients directly connect to gateways nodes which
+relay messages to the mix cascade.  These gateways are only connected
+to one mix cascade so it's trivial for the global passive adversary
+determine the cascade.
 
-If future design changes allowed the gateways to hide which mix cascade a given client
-is using then this would effectively let Elixxir's anonymity set size scale up linearly
-with the number of cascades. Currently however the anonymity set size is the number of
+If future design changes allowed the gateways to hide which mix
+cascade a given client is using then this would effectively let
+Elixxir's anonymity set size scale up linearly with the number of
+cascades. Currently however the anonymity set size is the number of
 message slots for a mix round no matter how many cascades there are.
 
 ### Notions
 
-Just as cryptographers use hierarchical graphs of security notions to reason
-about cryptographic primitives, so too must we use privacy notions to reason
-about anonymous communication network privacy properties. ACN privacy notions
-describe precisely what kind of metadata cannot be prevented from leaking.
-Furthermore these privacy notions can be used as a basis of comparison when
-looking at various anonymous communication protocols.
+Just as cryptographers use hierarchical graphs of security notions to
+reason about cryptographic primitives, so too must we use privacy
+notions to reason about anonymous communication network privacy
+properties. ACN privacy notions describe precisely what kind of
+metadata cannot be prevented from leaking.  Furthermore these privacy
+notions can be used as a basis of comparison when looking at various
+anonymous communication protocols.
 
 For more information about ACN privacy notions see "On Privacy Notions
 in Anonymous Communication" by Christiane Kuhn, Martin Beck, Stefan
@@ -78,12 +86,13 @@ in each of these categories.
 
 ### Compulsion attacks
 
-In this case compulsion attacks refer to situations where the adversary
-compells mix operators to hand over their private cryptographic key material
-or to compromise the mix in some way. In the case of Elixxir, the route is whatever mix
-cascade the client happens to be using. The adversary needs to compromise
-all the mixes in the cascade in order to successfully link the ingress messages
-with the egress messages.
+In this case compulsion attacks refer to situations where the
+adversary compells mix operators to hand over their private
+cryptographic key material or to compromise the mix in some way. In
+the case of Elixxir, the route is whatever mix cascade the client
+happens to be using. The adversary needs to compromise all the mixes
+in the cascade in order to successfully link the ingress messages with
+the egress messages.
 
 Elixxir tries to protect against the compulsion attack in two primary ways:
 
