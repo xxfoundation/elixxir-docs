@@ -33,6 +33,18 @@ must use end to end encryption to protect the confidentiality of the messages.
 
 ## Privacy
 
+## Anonymity Set
+
+The Elixxir mix network does notion to hide which mix cascade a given client is using.
+Clients directly connect to gateways nodes which relay messages to the mix cascade.
+These gateways are only connected to one mix cascade so it's trivial for the
+global passive adversary determine the cascade.
+
+If future design changes allowed the gateways to hide which mix cascade a given client
+is using then this would effectively let Elixxir's anonymity set size scale up linearly
+with the number of cascades. Currently however the anonymity set size is the number of
+message slots for a mix round no matter how many cascades there are.
+
 ### Notions
 
 Just as cryptographers use hierarchical graphs of security notions to reason
@@ -148,6 +160,11 @@ In the context of Elixxir we are using fixed predetermined cascades of
 mixes therefore performing such an attack on the entry mix node gets
 us the results when all the messages exit the cascade.
 
+Elixxir also has a special variation of the above N-1 attack where
+the adversary compromises the gateway node that the target client is using.
+The adversary simply causes the gateway to insert dummy messages in all
+message slots except that of the target message.
+
 **What is the Elixxir defense to this attack?**
 
 ### statistical disclosure attacks
@@ -166,10 +183,21 @@ viable in the general sense. However whether or not such attacks will
 succeed is very much dependent on client behavior because highly
 repetetive and predictable behavior makes it easier for the adversary.
 
+In theory it should be possible to model user behavior in some
+simplified manner that allows a simulator or statistical model to be
+constructed that let's us identify the timed needed to mount a
+successful long term statistical disclosure attack. This might be
+important future work if we want to iterate the design towards
+stronger privacy notions.
+
 ### High-level protocol traffic correlation attacks
 
-It is possible that layering protocols on top of mixnet protocols results
-in unexpected emergent behavior that cancels out the privacy notions of the mixnet
-by leaking additional statistical information. The Elixxir development team currently
-believes their existing mixnet protocols are simple enough that there is no unknown
-emergent behavior which would cause additional privacy leaks.
+It is possible that layering protocols on top of mixnet protocols
+results in unexpected emergent behavior that cancels out the privacy
+notions of the mixnet by leaking additional statistical
+information. The Elixxir development team currently believes their
+existing mixnet protocols are simple enough that there is no emergent
+behavior which would cause additional privacy leaks.
+
+Perhaps in the future formal methods could help us gain more confidence
+there is no unexpected emergent protocol behavior.
