@@ -14,6 +14,13 @@ model for the entire mix network and it's basic protocol which is to
 be augmented by protocol composition for each specific mixnet
 protocol.
 
+Therefore to read the full threat model of a given application on the
+Elixxir mix network, you must read this section first, it provides the
+base mixnet threat model. And then you read the security and anonymity
+consideration sections of the [end to end protocol
+document](end_to_end.md).
+
+
 ## Network Composition
 
 As mentioned in the [architectural overview
@@ -101,14 +108,17 @@ Elixxir tries to protect against the compulsion attack in two primary ways:
 1. The PKI selects mix nodes for composing cascade which are geographically
 distant from one another.
 
-2. Mix cascades are only used for a short period of time. The PKI is
-continually generating more mix cascades and publishing them to the
-network. Adversaries cannot predict what a future cascade will be.
+2. Mix node key rotation: Mix cascades are only used for a short
+period of time. The PKI is continually generating more mix cascades
+and publishing them to the network. Adversaries cannot predict what a
+future cascade will be. If some mix keys are captured by the
+adversary they will only be useful for a limited period of time.
 
 In some circumstances the compulsion attack may involve breaking some
-cryptographic protocol. Therefore the addition of the cryptographic
+cryptographic protocols. Therefore the addition of the cryptographic
 wire protocol (Elixxir uses TLS) should make such cryptographic compulsion
-attacks more difficult or non-viable.
+attacks more difficult by providing the adversary with another cryptographic
+protocol to break.
 
 ### Epistemic attacks
  

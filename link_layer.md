@@ -28,9 +28,10 @@ consists of gRPC transported using TLS.
 
 ## A tour of our TLS usage and it's CA controls.
 
-TLS controlled by NDF (network definition file) which is distributed
+The Elixxir mix network's TLS endpoints are controlled by NDF
+(network definition file) which is distributed
 by the mixnet PKI system. Embedded within the NDF are the x.509
-Certificates for the mixnet TLS endpoints. These TLS certificates are
+Certificates for the TLS endpoints. These TLS certificates are
 used to ensure that only authorized gateways and nodes may participate
 in the mix network. However this TLS authentication is also used to
 enforce the ordering of each mix cascade. As mentioned in the
@@ -44,7 +45,7 @@ FIXME.
 
 ## Security Consideration
 
-	- Assuming the mixnet PKI works properly the link layer encryption should
-	make Compulsion Attacks even more difficult. See the threat model section
-	for further discussion about Compulsion Attacks.
+- Assuming the mixnet PKI works properly the link layer encryption should
+  make Compulsion Attacks even more difficult. See the threat model section
+  for further discussion about Compulsion Attacks.
 
