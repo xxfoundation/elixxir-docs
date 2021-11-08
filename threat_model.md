@@ -14,7 +14,7 @@ model for the entire mix network and it's basic protocol which is to
 be augmented by protocol composition for each specific mixnet
 protocol.
 
-## Security
+## Network Composition
 
 As mentioned in the [architectural overview
 document](architecture.md), the PKI system is the root of all
@@ -29,20 +29,23 @@ layer is used to encrypt all communications between each component of
 the network.
 
 The cMix encryption is composed on the clients and terminates on the
-last mix node.  The last mix node in a given route forwards the
+last mix node. The last mix node in a given route forwards the
 messages to the destination service on the gateway system. These
 messages are not protected with the cMix encryption. For some
 applications this is perfectly acceptable. However for encrypted chat
-the client side must use end to end encryption to protect the
+the clients must use end to end encryption to protect the
 confidentiality of the messages.
 
-## Privacy
+The last mix in the cascade and the terminating gateway get to see the
+message plaintext. Therefore the end to end encryption must not
+contain any bitwise distinguishable patterns corresponding to client
+identity. Likewise messages must be padded to a fixed length.
 
 ## Anonymity Set
 
 The Elixxir mix network does notion to hide which mix cascade a given
-client is using.  Clients directly connect to gateways nodes which
-relay messages to the mix cascade.  These gateways are only connected
+client is using. Clients directly connect to gateways nodes which
+relay messages to the mix cascade. These gateways are only connected
 to one mix cascade so it's trivial for the global passive adversary
 determine the cascade.
 
@@ -52,7 +55,7 @@ Elixxir's anonymity set size scale up linearly with the number of
 cascades. Currently however the anonymity set size is the number of
 message slots for a mix round no matter how many cascades there are.
 
-### Notions
+## Privacy Notions
 
 Just as cryptographers use hierarchical graphs of security notions to
 reason about cryptographic primitives, so too must we use privacy
@@ -81,8 +84,7 @@ for either senders or receivers.
 ## Mixnet Attacks and Defenses
 
 All mixnets have attacks that are in each of these categories. In this
-section we enumerate our defenses or partial defenses for attacks
-in each of these categories.
+section we enumerate our defenses or partial defenses for these attacks.
 
 ### Compulsion attacks
 
