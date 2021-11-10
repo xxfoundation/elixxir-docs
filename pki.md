@@ -20,7 +20,7 @@ scope of this document which only attempts to describe the high level
 abstraction of the mixnet PKI. Here we will discuss how the PKI is
 used by the various components in our mixnet: clients, gateways and mix nodes.
 
-## PKI system provides and certifies the: NDF and Rounds
+## Network component interactions with the PKI:
 
 Just like other network components, the PKI uses the mixnet's wire protocol;
 which is essentially gRPC over TLS. The point of all this is
@@ -28,7 +28,12 @@ for the PKI to publish and distribute the "network view" documents to the
 other network components. In the Elixxir mixnet the "network view" is composed
 of an NDF (network definition file) and a Rounds structure.
 
-## Network component interactions with the PKI:
+The PKI document contains X.509 certificates which are used by the
+network components for their TLS authentication. Additionally the mix
+cascade hierarchy is enforced by this TLS authentication by means
+of certificates distributed in the PKI document.
+
+## PKI document format
 
 The complete gRPC schema can be found here:
 
