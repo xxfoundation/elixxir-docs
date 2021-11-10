@@ -23,10 +23,9 @@ However it's worth mentioning that certain groups of people in
 very specific contexts will have a much higher motivation to use
 mixnets, such as:
 
-	- journalists/whistleblowers
-	- medical industry
-	- intelligence, military, deplomacy
-
+- journalists/whistleblowers
+- medical industry
+- intelligence, military, deplomacy
 
 In these contexts it's easy to imagine dire consequences for
 successful traffic analysis that results in the adversary making use
@@ -46,10 +45,11 @@ with differing protocols.
 ## Network composition:
 
 The Elixxir mix network has several components:
-	- clients
-	- gateways
-	- mix nodes
-	- PKI infrastructure
+
+- clients
+- gateways
+- mix nodes
+- PKI infrastructure
 
 All components exchange information with the PKI so that public key
 material and connectivity information is known by all network components.
