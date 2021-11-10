@@ -1,8 +1,7 @@
 # The Elixxir Design Specification Documents
 
-Technical documentation for Elixxir, a cMix implementation.
-
-[title](https://www.example.com)
+Technical design documentation for the Elixxir mix network, a cMix implementation.
+Read these documents to understand the design of the Elixxir mix network.
 
    - [Architectural Overview](architecture.md)
 
@@ -11,3 +10,8 @@ Technical documentation for Elixxir, a cMix implementation.
    - [Link layer](link_layer.md)
    
    - [End to End](end_to_end.md)
+
+   - [Threat Model](threat_model.md)
+
+
+**FIXME**: Add PDF copies of the design documents from the google drive... link to them here.
