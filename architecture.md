@@ -13,10 +13,27 @@ such as message sizes, send and receive times et cetera.
 
 Let it be known that this metadata is in fact revealing enough that
 it's capture routinely results in human rights violations. It is very
-telling that Phillip Rogaway cites [Chaum81] 13 times in
-his paper "The Moral Character of Cryptographic Works" where he
-repeated tells the academic cryptographer community that they must do
-work which is socially relevant.
+telling that Phillip Rogaway cites David Chaum's first mixnet paper
+(referred to as [Chaum81]) 13 times in his paper "The Moral Character
+of Cryptographic Works" where he tries to encourage academic
+cryptographers to do work that is socially relevant.
+
+Obviously everyone should be using mixnets in their communication.
+However it's worth mentioning that certain groups of people in
+very specific contexts will have a much higher motivation to use
+mixnets, such as:
+
+	- journalists/whistleblowers
+	- medical industry
+	- intelligence, military, deplomacy
+
+
+In these contexts it's easy to imagine dire consequences for
+successful traffic analysis that results in the adversary making use
+of the metadata leaked from communications protocols. However the mix
+network would ideally have people using it that are outside of these
+higher risk communication contexts. In general it could be said that
+"anonymity loves company"; (perhaps add citation to the paper).
 
 ## Mixnet as overlay network protects against traffic analysis
 
@@ -35,11 +52,14 @@ The Elixxir mix network has several components:
 	- PKI infrastructure
 
 All components exchange information with the PKI so that public key
-material and connectivity information is published. Mix nodes are
-arranged into many mix cascades. Clients can only communicate with
+material and connectivity information is known by all network components.
+Mix nodes are arranged into many mix cascades. Clients can only communicate with
 the gateways. Gateways route client message onto the correct mix
 cascade. The terminating hop of the mix cascade routes messages to the
 gateways.
+
+
+**FIXME**: Add diagram containing: gateways, mix cascades, clients and pki.
 
 
 ## Elixxir has a modular design with the intent for general purpose usage
@@ -97,6 +117,4 @@ the PKI is a single server which represents a terrible single point of failure.
 In the future we plan to replace this single server PKI with a
 decentralized protocol using the Elixxir blockchain.
 
-
-
-	FIXME: Add a link to threat model document for further threat model details.
+For further threat model details see the [threat model document](threat_model.md).
