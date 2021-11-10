@@ -1,4 +1,44 @@
 
+# The Elixxir End To End Transport Protocol
+
+## Abstract
+
+Here we describe the Elixxir mix network end to end transportation
+which consists of various protocol.
+
+## Introduction
+
+As was explained in the [architectural overview](architecture.md),
+the Elixxir mix network is meant to be a general purpose mix network
+that can support a wide variety of applications. The clients connect
+directly to the gateways for all their network interactions. The first
+application to be developed by the Elixxir development team is a chat
+application that supports one on one and group chat. For the purpose
+of supporting the Elixxir chat application, the gateways interact with
+a message spool database so they can persist chat messages for later
+retrieval by the recipient client. The full end to end path looks like
+this:
+
+client -> gateway -> mix cascade -> gateway -> spool database
+
+Later on the recipient client can retrieve their messages by
+interacting with any of the gateways.
+
+The gateway nodes also have support for a plugin system so additional
+mixnet services may be added. That is, instead of delivering a message
+to a message spool, the message is instead passed on to the mixnet
+service plugin which then can determine the fate of the message.
+
+
+# The Elixxir Chat End To End Cryptographic Protocol
+
+## Abstract
+
+## Introduction
+
+
+
+
 # NOTES: end to end protocol
 
 * End to End protocol description, here:
