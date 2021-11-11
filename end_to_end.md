@@ -1,10 +1,22 @@
 
+# End to End Considerations
+
+Herein we shall present the designs of the end to end
+mix network message transport along with an end to end
+encryption protocol used by the Elixxir chat application
+(known as "xx messenger", **citation needed**).
+
+As well soon show, these are rather two distinct protocols.
+The encryption protocol could be used with other transports,
+and likewise other types of applications could use the mix
+network transport protocol.
+
 # The Elixxir End To End Transport Protocol
 
 ## Abstract
 
 Here we describe the Elixxir mix network end to end transportation
-which consists of various protocol.
+which is an kind of amalgam of protocols.
 
 ## Introduction
 
@@ -18,6 +30,8 @@ of supporting the Elixxir chat application, the gateways interact with
 a message spool database so they can persist chat messages for later
 retrieval by the recipient client. The full end to end path looks like
 this:
+
+**FIXME**: add an explainatory diagram
 
 client -> gateway -> mix cascade -> gateway -> spool database
 
@@ -34,9 +48,20 @@ service plugin which then can determine the fate of the message.
 
 ## Abstract
 
+Here we discuss some design details of the end to end cryptographic
+protocols of the Elixxir mix network chat application known as xx
+messenger.
+
 ## Introduction
 
+In addition to message confidentiality and authenticity we have the
+additional requirement of bitwise indistinguishability. Meaning that
+we don't want our end to end message ciphertexts leaking any bits of
+information that helps an adversary distinguish some kind of metadata.
 
+## Cryptographic primitives
+
+## Protocol Descriptions
 
 
 # NOTES: end to end protocol
