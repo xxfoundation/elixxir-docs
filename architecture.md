@@ -30,9 +30,11 @@ mixnets, such as:
 In these contexts it's easy to imagine dire consequences for
 successful traffic analysis that results in the adversary making use
 of the metadata leaked from communications protocols. However the mix
-network would ideally have people using it that are outside of these
-higher risk communication contexts. In general it could be said that
-"anonymity loves company"; (perhaps add citation to the paper).
+network would ideally have people using it that are in and outside of
+these higher risk communication contexts. In general it could be said
+that "anonymity loves company"; (perhaps add citation to the paper).
+In other words, the boring people provide cover traffic for the
+interesting people.
 
 ## Mixnet as overlay network protects against traffic analysis
 
@@ -66,12 +68,14 @@ gateways.
 
 ### Pluggable gateways
 
-Gateways can run admin supplied plugins which run arbitrary network services that
-respond to queries routed over the mix network sent by anonymous clients.
+Gateways can run admin supplied plugins which run arbitrary network
+services that respond to queries routed over the mix network sent by
+anonymous clients.
 
 ### General purpose client library 
 
-The Elixxir client library can be used to write clients which interact with the mixnet services.
+The Elixxir client library can be used to write clients which interact
+with the mixnet services.
 
 ## Threat model summary
 
@@ -83,19 +87,36 @@ input and output messages.
 
 Bitwise unlinkability is necessary but is not sufficient. Imagine a
 mixnet that routed messages to the next hop as fast as
-possible. Statistical timing correlations could then be used to link input and
-output messages. Therefore mix nodes must add latency in order to
-create uncertainty as to the links between input and output messages
-for adversaries who are passively watching the network.
+possible. Statistical timing correlations could then be used to link
+input and output messages. Therefore mix nodes must add latency and
+uncertainty.
 
-In the case of Elixxir's cMIx mixing strategy, messages are
-mixed in fixed size batches of messages at predetermined mixing rounds.
+There are roughly two categories of mix strategies.
+Fixed sized batch mixes and continuous time mixes. The later is design
+where messages enter and exit the mix at random times and there is not
+a specific number of messages that are being mixed at a given time but
+rather an estimate of Shannon entropy. That is to say, an entropy
+measurement can be used to express the uncertainty an adversary has
+with regard to linking input messages with the output
+messages.
 
-### The Anytrust Model
+The Elixxir mix network is an example of the former case, a batch mix
+with a fixed number of input message slots. Therefore the anonymity
+set size and equivalent Shannon entropy of the mix is always the
+same. The mix network fails if there aren't enough input messages by
+the mixing round time deadline. For many threat models this is
+advantageous over a continuous time mix strategy such as the Poisson
+mix strategy from the Loopix mix network design where the mix entropy
+may drop to an unsafe level if the overall network traffic
+drops. Therefore it can be said that cMix is comparatively
+"fail-closed" in this regard. Likewise, bank vaults do not "fail-open"
+and unlock themselves when the power goes out.
+
+### The Mixnet Anytrust Model
 
 Given a fixed route that a mixnet message must follow, the route is
-only compromised if all of the mixes in the route are compromised.
-Said another way, if any one of the mixes in a given route are not
+only compromised if all of the mix nodes in the route are compromised.
+Said another way, if any one of the mix nodes in a given route are not
 compromised then that route still provides the anonymity privacy
 notions that the protocol was designed to provide. This is due to the
 added latency and bitwise unlinkability as described above; they
