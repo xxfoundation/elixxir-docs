@@ -1,9 +1,9 @@
 
-# Elixxir mix network link layer protocol
+# Elixxir mix network wire protocol
 
 ## Abstract
 
-This document describes the Elixxir link layer which is the
+This document describes the Elixxir wire protocol which is the
 lowest level protocol in the Elixxir protocol stack and allows
 the Elixxir network components to communicate with one another.
 
@@ -12,7 +12,7 @@ the Elixxir network components to communicate with one another.
 As mentioned in the [architectural overview](architecture.md) the
 Elixxir mix network functions as an overlay network. This means that
 Elixxir protocol layers are built on top of existing Internet
-protocols. The Elixxir link layer is built on top of TCP/IPv4 (IPv6
+protocols. The Elixxir wire protocol is built on top of TCP/IPv4 (IPv6
 is not disabled but also not tested at this time) and consists 
 of TLS transporting gRPC payloads.
 
@@ -102,7 +102,7 @@ TODO: Pull out code samples, link via footnote to actual code (as above). Explai
 - how members of thenetwork handle the NDF:
   https://git.xx.network/elixxir/comms/-/tree/release/network
 
-- link layer implementation
+- wire protocol implementation
   https://git.xx.network/xx_network/comms/-/tree/release/connect
 
 - how members of thenetwork handle the NDF
@@ -207,7 +207,7 @@ to end path. Without compromising or operating one of the xx network
 nodes it will not be possible for the adversary to gain access to cMix
 ciphertexts flowing through the network. It might be the case that
 this makes certain attacks more difficult, for example attacking the
-cMix protocol would first require attacking the link layer. See the
+cMix protocol would first require attacking the wire protocol. See the
 [threat model document](threat_model.md) for further discussion about
 Compulsion Attacks.
 
