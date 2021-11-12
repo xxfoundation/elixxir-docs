@@ -7,7 +7,9 @@ Read these documents to understand the design of the Elixxir mix network.
 
    - [PKI](pki.md)
    
-   - [Link layer](link_layer.md)
+   - [Wire Protocol](wire.md)
+   
+   - [cMix Protocol](cmix.md)
    
    - [End to End](end_to_end.md)
 

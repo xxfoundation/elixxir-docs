@@ -17,8 +17,7 @@ protocol.
 Therefore to read the full threat model of a given application on the
 Elixxir mix network, you must read this section first, it provides the
 base mixnet threat model. And then you read the security and anonymity
-consideration sections of the [end to end protocol
-document](end_to_end.md).
+consideration sections of the [end to end protocol design](end_to_end.md).
 
 
 ## Network Composition
@@ -31,7 +30,7 @@ If the PKi is compromised, the adversary can swap out the old mix
 cascades for his own mix cascades where the adversary knows all the
 mix private keys and can therefore link senders and receivers.
 
-As mentioned in the [link layer document](link_layer.md), our TLS link
+As mentioned in the xx network [wire protocol design](wire.md), our TLS link
 layer is used to encrypt all communications between each component of
 the network.
 
