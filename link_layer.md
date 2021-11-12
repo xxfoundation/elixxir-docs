@@ -71,13 +71,16 @@ each entity. An example of this data structure from a Partial NDF is as follows:
 ```
 
 Every connection made by our wire protocol is protected by TLS. All
-public keys for TLS are in this (signed) NDF. To make a connection, 
-the initator (Dialer) provides the TLS certificate and the connection string
-("Address" field in NDF) and the TLS library uses this to check that 
-the certificate matches. This is similar to certificate pinning, except 
-certificates can change as hosts are added and removed on the network through 
-the PKI (permissioning server, TBD consensus mechanism) via changes in the NDF. 
-For more details about the public key infrastructure, see the [PKI section](pki.md).
+public keys for TLS are in this (signed) NDF. To make a connection,
+the initator (Dialer) provides the TLS certificate and the connection
+string ("Address" field in NDF) and the TLS library uses this to check
+that the certificate matches. This is similar to certificate pinning,
+except certificates can change as hosts are added and removed on the
+network through the PKI (permissioning server, TBD consensus
+mechanism) via changes in the NDF. The PKI generates many cascades
+and the topology of these cascades is enforced with TLS
+authentication. For more details about the public key infrastructure,
+see the [PKI section](pki.md).
 
 ## TLS Ciphersuite and Parameterizations
 
@@ -104,21 +107,6 @@ TODO: Pull out code samples, link via footnote to actual code (as above). Explai
 
 - how members of thenetwork handle the NDF
   https://git.xx.network/elixxir/registration/-/blob/release/storage/state.go#L338
-
-
-## A tour of our TLS usage and it's CA controls.
-
-TODO: Integrate with above, important is to link the cascade topology because it's enforced somewhat by the wire protocol.
-
-The Elixxir mix network's TLS endpoints are controlled by NDF
-(network definition file) which is distributed
-by the mixnet PKI system. Embedded within the NDF are the x.509
-Certificates for the TLS endpoints. These TLS certificates are
-used to ensure that only authorized gateways and nodes may participate
-in the mix network. However this TLS authentication is also used to
-enforce the ordering of each mix cascade. As mentioned in the
-architectural overview, the Elixxir mixnet is composed of many
-cascades.
 
 
 ## gRPC protocol messages used by each network component
