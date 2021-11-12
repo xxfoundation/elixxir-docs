@@ -12,8 +12,67 @@ the Elixxir network components to communicate to one another.
 As mentioned in the [architectural overview](architecture.md) the
 Elixxir mix network functions as an overlay network. This means that
 Elixxir protocol layers are built on top of existing Internet
-protocols. The Elixxir link layer is built on top of TCP/IPv4 and
-consists of TLS transporting gRPC payloads.
+protocols. The Elixxir link layer is built on top of TCP/IPv4 (IPv6
+is not disabled but also not tested at this time) and consists 
+of TLS transporting gRPC payloads.
+
+TLS X.509 certs are derived from the Network Definition File[^0] (NDF).
+The NDF acts as a sort of DNS zone file for the entire network but
+includes port numbers and cryptographic keying material necessary
+for the xx protocol stack, like the `XXX` in TOR and `YYY` in I2P. 
+(NOTE: What is this called in ToR and I2P?)
+
+Currently, a permissioning server[^1], which will be replaced by 
+blockchain consensus, generates and signs the NDF. The cMix nodes poll
+the permissioning server for the "Full" NDF, which consists of all
+network connectivity information. The cMix gateways poll their local 
+cMix node for both a "Partial" and "Full" NDF. A Partial NDF does not
+contain connectivity information for other nodes, and clients are able
+to poll any cMix gateways for the Partial NDF.
+
+Diagram: Permissioning (generates NDF) -> Nodes -> Gateways -> Clients
+- Gateways don't talk to permissioning
+- Clients don't talk to nodes or permissioning
+Similar to how cacheing dns resolvers .... clients don't need to talk to permissioning server 
+
+The NDF contains a list of "Nodes" (cMix nodes) and "Gateways" (cMix gateways) 
+that detail the address and the PEM encoded TLS X.509 public keys for 
+each entity. An example of this data structure from a Partial NDF is as follows: 
+
+```json
+{
+  "...": "...",
+  "Gateways": [
+    {
+      "Id": "6ZTH8Y01DHrRFahBtLjF4uRTPed/JuM1R12lr2A2hv0B",
+      "Address": "161.35.228.41:22840",
+      "Tls_certificate": "-----BEGIN CERTIFICATE-----\n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\n-----END CERTIFICATE-----\n",
+      "Bin": "NorthAmerica"
+    },
+    "...": "...", 
+  ],
+  "Nodes": [
+    {
+      "Id": "6ZTH8Y01DHrRFahBtLjF4uRTPed/JuM1R12lr2A2hv0C",
+      "Address": "",
+      "Tls_certificate": "",
+      "Status": 0
+    },
+    {},
+  ],
+  "...": "...",
+  
+}
+```
+
+Every connection made by our wire protocol is protected by TLS. All
+public keys for TLS are in this (signed) NDF. To make a connection, 
+the initator (Dialer) provides the TLS certificate and the connection string
+("Address" field in NDF) and the TLS library uses this to check that 
+the certificate matches. This is similar to certificate pinning, except 
+certificates can change as hosts are added and removed on the network through 
+the PKI (permissioning server, TBD consensus mechanism) via changes in the NDF. 
+For more details about the public key infrastructure, see the [PKI section](pki.md).
 
 ## TLS Ciphersuite and Parameterizations
 
@@ -54,4 +113,7 @@ FIXME.
 - Assuming the mixnet PKI works properly the link layer encryption should
   make Compulsion Attacks even more difficult. See the threat model section
   for further discussion about Compulsion Attacks.
+
+[^0] https://git.xx.network/xx_network/primitives/-/blob/f0cff220e3b24a1a6636fbc72b40f2cb9aa73f41/ndf/ndf.go#L30
+[^1] https://git.xx.network/elixxir/registration
 
