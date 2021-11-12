@@ -5,7 +5,7 @@
 
 This document describes the Elixxir link layer which is the
 lowest level protocol in the Elixxir protocol stack and allows
-the Elixxir network components to communicate to one another.
+the Elixxir network components to communicate with one another.
 
 ## Introduction
 
@@ -31,9 +31,14 @@ contain connectivity information for other nodes, and clients are able
 to poll any cMix gateways for the Partial NDF.
 
 Diagram: Permissioning (generates NDF) -> Nodes -> Gateways -> Clients
+
 - Gateways don't talk to permissioning
 - Clients don't talk to nodes or permissioning
-Similar to how cacheing dns resolvers .... clients don't need to talk to permissioning server 
+
+Similar to how cacheing DNS resolvers prevent clients from having to
+talk directly to the authoritative servers, xx clients don't need to talk
+to PKI system directly because the NDF and mix rounds information is
+cached and made available by the Gateways.
 
 The NDF contains a list of "Nodes" (cMix nodes) and "Gateways" (cMix gateways) 
 that detail the address and the PEM encoded TLS X.509 public keys for 
@@ -78,7 +83,7 @@ For more details about the public key infrastructure, see the [PKI section](pki.
 
 At this time, ciphersuite selections are the defaults for the go tls library. 
 Our current desired selection is `TLS_CHACHA20_POLY1305_SHA256` with the `X25519`
-curve id proposed by Daniel J. Bernstein.
+curve proposed by Daniel J. Bernstein.
 
 We plan to move to a quantum resistant scheme in the future. Our intent is to 
 exchange both quantum resistant and classical keys, then use the derivation of
@@ -208,9 +213,15 @@ message GossipMsg {
 
 ## Security Consideration
 
-- Assuming the mixnet PKI works properly the link layer encryption should
-  make Compulsion Attacks even more difficult. See the threat model section
-  for further discussion about Compulsion Attacks.
+- Defense in depth implies using multiple layers of encryption
+protocols, each of which covers a different segment of the overall end
+to end path. Without compromising or operating one of the xx network
+nodes it will not be possible for the adversary to gain access to cMix
+ciphertexts flowing through the network. It might be the case that
+this makes certain attacks more difficult, for example attacking the
+cMix protocol would first require attacking the link layer. See the
+[threat model document](threat_model.md) for further discussion about
+Compulsion Attacks.
 
 [^0] https://git.xx.network/xx_network/primitives/-/blob/f0cff220e3b24a1a6636fbc72b40f2cb9aa73f41/ndf/ndf.go#L30
 [^1] https://git.xx.network/elixxir/registration
