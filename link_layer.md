@@ -76,10 +76,20 @@ For more details about the public key infrastructure, see the [PKI section](pki.
 
 ## TLS Ciphersuite and Parameterizations
 
-**FIXME**: Fix the code so that it specifies the precise TLS ciphersuite and any other
+At this time, ciphersuite selections are the defaults for the go tls library. 
+Our current desired selection is `TLS_CHACHA20_POLY1305_SHA256` with the `X25519`
+curve id proposed by Daniel J. Bernstein.
+
+We plan to move to a quantum resistant scheme in the future. Our intent is to 
+exchange both quantum resistant and classical keys, then use the derivation of
+both to derive a symmetric cipher key. 
+
+FIXME: The source code does not specify the precise TLS ciphersuite and any other
 relavant parameters. Then specify the ciphersuite selection here in this document.
 
 ## Implementation
+
+TODO: Pull out code samples, link via footnote to actual code (as above). Explain intent behind code.
 
 - how members of thenetwork handle the NDF:
   https://git.xx.network/elixxir/comms/-/tree/release/network
@@ -92,6 +102,8 @@ relavant parameters. Then specify the ciphersuite selection here in this documen
 
 
 ## A tour of our TLS usage and it's CA controls.
+
+TODO: Integrate with above, important is to link the cascade topology because it's enforced somewhat by the wire protocol.
 
 The Elixxir mix network's TLS endpoints are controlled by NDF
 (network definition file) which is distributed
@@ -106,7 +118,93 @@ cascades.
 
 ## gRPC protocol messages used by each network component
 
-FIXME.
+The gRPC protocols are split across 3 proto files:
+
+1. xx_network:comms/messages/messages.proto[^3]: Defines generic service and 
+   signature structures for requesting and authenticating tokens.
+2. xx_network:comms/gossip/gossip.proto[^4]: Defines a service and structures
+   for the gossip protocol used by gateways.
+3. elixxir:comms/messages/messages.proto[^5]: 
+
+### xx_network:comms/messages/messages.proto
+
+```
+// Generic service definition
+service Generic {
+    // Authenticate a token with the server
+    rpc AuthenticateToken (AuthenticatedMessage) returns (Ack) {
+    }
+
+    // Request a token from the server
+    rpc RequestToken (Ping) returns (AssignToken) {
+    }
+}
+
+// Generic response message providing an error message from remote servers
+message Ack {
+    string Error = 1;
+}
+
+// Empty message for requesting action from any type of server
+message Ping {
+}
+
+// Wrapper for authenticated messages that also ensure integrity
+message AuthenticatedMessage {
+    bytes ID = 1;
+    bytes Signature = 2;
+    bytes Token = 3;
+    ClientID Client = 4;
+    google.protobuf.Any Message = 5;
+}
+
+// Message used for assembly of Client IDs in the system
+message ClientID {
+    bytes Salt = 1;
+    string PublicKey = 2;
+}
+
+// Provides a token to establish reverse identity to any type of client
+message AssignToken {
+    bytes Token = 1;
+}
+
+// RSASignature is a digital signature for the RSA algorithm
+message RSASignature {
+    bytes Nonce = 1;
+    bytes Signature = 2;
+}
+
+// ECCSignature is a digital signature for the ECC algorithm
+message ECCSignature {
+    bytes Nonce = 1;
+    bytes Signature = 2;
+}
+```
+
+### xx_network:comms/gossip/gossip.proto
+
+```
+// RPC for handling generic reception of Gossip messages
+service Gossip {
+    rpc Endpoint (GossipMsg) returns (Ack);
+    rpc Stream (stream GossipMsg) returns (Ack);
+}
+
+// Generic response message providing an error message from remote servers
+message Ack {
+    string Error = 1;
+}
+
+// Generic message used for a variety of Gossip protocols
+message GossipMsg {
+    string Tag = 1;
+    bytes  Origin = 2;
+    bytes  Payload = 3;
+    bytes  Signature = 4;
+    int64 timestamp = 5;
+}
+```
 
 ## Security Consideration
 
@@ -116,4 +214,5 @@ FIXME.
 
 [^0] https://git.xx.network/xx_network/primitives/-/blob/f0cff220e3b24a1a6636fbc72b40f2cb9aa73f41/ndf/ndf.go#L30
 [^1] https://git.xx.network/elixxir/registration
-
+[^3] https://git.xx.network/xx_network/comms/-/blob/ba23bfbdce748e0dad29d27556e31a313c5328ba/messages/messages.proto 
+[^4] https://git.xx.network/xx_network/comms/-/blob/ba23bfbdce748e0dad29d27556e31a313c5328ba/gossip/gossip.proto 
