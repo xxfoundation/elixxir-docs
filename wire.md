@@ -117,7 +117,9 @@ The gRPC protocols are split across 3 proto files:
    signature structures for requesting and authenticating tokens.
 2. xx_network:comms/gossip/gossip.proto[^4]: Defines a service and structures
    for the gossip protocol used by gateways.
-3. elixxir:comms/messages/messages.proto[^5]: 
+3. elixxir:comms/messages/messages.proto[^5]: Defines all of services and structures
+   for the permissioning (registration), server, gateway, and clients in the cMix
+   protocol. 
 
 ### xx_network:comms/messages/messages.proto
 
@@ -175,6 +177,8 @@ message ECCSignature {
 }
 ```
 
+Authenticated messaging is used between gateways and servers and between servers. 
+
 ### xx_network:comms/gossip/gossip.proto
 
 ```
@@ -199,6 +203,111 @@ message GossipMsg {
 }
 ```
 
+Gateways use gossip messages to transmit information between each other. Specifically, gatways gossip bloom filters which say what ephemeral recipient IDs received messages in each round. Gossip is also used by the consensus/blockchain information. 
+
+### elixxir:comms/messages/messages.proto
+
+In lieu of the size of the file in [^5], we instead discuss each service and summarize each function here. Instead of a direct implementation, the services often use a generalized interface that is implemented in the corresponding repository. We reference each as a footnote below. 
+
+1. Server[^6]
+  a. AskOnline (messages.AuthenticatedMessage) returns (messages.Ack) -- Polls a 
+     server to determine if it is active for running rounds in the cMix protocol. 
+  b. CreateNewRound (messages.AuthenticatedMessage) returns (messages.Ack) --
+     makes a new round with a certain it. 
+  c. UploadUnmixedBatch(server mixmessages.Node_UploadUnmixedBatchServer, auth
+     *connect.Auth) error -- Server interface for sending a new batch
+  d. DownloadMixedBatch(..., 
+     batchInfo *mixmessages.BatchReady, auth *connect.Auth) error -- Server 
+     interface for handling a mixed batch request
+  e. FinishRealtime(message *mixmessages.RoundInfo, ..., auth *connect.Auth) error -- 
+     Server interface for broadcasting when realtime is complete
+  f. GetRoundBufferInfo(auth *connect.Auth) (int, error) -- GetRoundBufferInfo  
+     returns # of available precomputations
+  g. PrecompTestBatch(stream mixmessages.Node_PrecompTestBatchServer, 
+     info *mixmessages.RoundInfo, auth *connect.Auth) error -- PrecompTestBatch is a 
+     server to server streaming broadcast. It simulates sending the completed batch 
+     of FinishRealtime, testing for connectivity.
+  h. GetMeasure(message *mixmessages.RoundInfo, auth *connect.Auth) (*mixmessages.
+     RoundMetrics, error) -- Returns round metrics for the given roundinfo object.
+  j. PostPhase(message *mixmessages.Batch, auth *connect.Auth) error -- Server 
+     Interface for all Internode Comms. Each "phase" processes a batch on a different 
+     operation of the cMix protocol (precomputation and realtime).
+  **k. StreamPostPhase(server mixmessages.Node_StreamPostPhaseServer, 
+     auth *connect.Auth) error -- streaming version of the PostPhase function.**
+  **l. PostPrecompResult(roundID uint64, numSlots uint32, auth *connect.Auth) error -- 
+     PostPrecompResult interface to finalize both payloads' precomp**
+  **m. Poll(msg *mixmessages.ServerPoll, auth *connect.Auth) (
+     *mixmessages.ServerPollResponse, error) -- Gateway -> Server unified polling for 
+     network definition file and round information.**
+  n. SendRoundTripPing(ping *mixmessages.RoundTripPing, auth *connect.Auth) error -- 
+     Given a specific network topology (path), collect statistics about how fast 
+     packets can travel through it.
+  o. RoundError(error *mixmessages.RoundError, auth *connect.Auth) error -- receive a 
+     report/broadcast of an error to all nodes in a round. 
+  p. GetNDF() (*interconnect.NDF, error) -- 	Consensus node -> cMix node NDF request
+     NOTE: For now cMix nodes serve the NDF to the consensus nodes, but this will be 
+     reversed once consensus generates the NDF
+  q. GetPermissioningAddress() (string, error) -- GetPermissioningAddress gets 
+     gateway the permissioning server's address from server.
+  r. StartSharePhase(ri *mixmessages.RoundInfo, auth *connect.Auth) error -- Server 
+     -> Server initiating multi-party round DH key generation
+  s. SharePhaseRound(sharedPiece *mixmessages.SharePiece, auth *connect.Auth) error 
+     -- Server -> Server passing state of multi-party round DH key generation
+  t. ShareFinalKey(sharedPiece *mixmessages.SharePiece, auth *connect.Auth) error -- 
+     Server -> Server sending multi-party round DH key
+  u. RequestClientKey(nonceRequest *mixmessages.SignedClientKeyRequest,
+     auth *connect.Auth) (*mixmessages.SignedKeyResponse, error) -- Server interface 
+     for RequestNonceMessage
+}
+
+The bolded elements are the key functions used in the cMix protocol. The rest are peripheral/utility functions or could be deprecated in the future. 
+
+2. Gateway[^7]
+  a. PutMessage(message *pb.GatewaySlot, ipAddr string) (*pb.GatewaySlotResponse, 
+     error) -- Clients upload a message to the cMix Gateway
+  b. PutManyMessages(msgs *pb.GatewaySlots, ipAddr string) (*pb.GatewaySlotResponse,
+     error) --  Clients upload many messages to the cMix Gateway
+  c. Poll(msg *pb.GatewayPoll) (*pb.GatewayPollResponse, error) -- Client -> Gateway 
+     unified polling for network information
+  d. RequestHistoricalRounds(msg *pb.HistoricalRounds) (*pb.HistoricalRoundsResponse,
+     error) -- Client -> Client function for getting historical round data (to figure 
+     out if the gateway has messages for this client.)
+  e. RequestMessages(msg *pb.GetMessages) (*pb.GetMessagesResponse, error) -- Client 
+     -> Gateway message retrieval.
+  f. RequestClientKey(message *pb.SignedClientKeyRequest) (*pb.SignedKeyResponse, 
+     error) -- Passthrough from client to server for establishing keys with the cMix
+     nodes.
+
+Gateways are the interface between nodes and clients. Clients cannot contact nodes directly and this is enforced via firewall/network configuration.
+
+3. Permissioning (Registrar)[^8]
+  a. RegisterUser(msg *pb.ClientRegistration) (confirmation 
+     *pb.SignedClientRegistrationConfirmations, err error) -- User registration for 
+     client devices. This is not accessible by clients per firewall rules and is 
+     instead implemented by Client Registrar. 
+  b. RegisterNode(salt []byte, serverAddr, serverTlsCert, gatewayAddr,
+     gatewayTlsCert, registrationCode string) error -- Node registration for the cMix 
+     protocol
+  c. PollNdf(ndfHash []byte) (*pb.NDF, error) -- utility function for retrieving the 
+     NDF from the network. Limited to local services by firewall rules. Not meant to
+     be used by clients.
+  d. Poll(msg *pb.PermissioningPoll, auth *connect.Auth) (*pb.
+     PermissionPollResponse, error) -- Network information polling function. Returns 
+     NDF, RoundInfo, and other information and events.
+  e. CheckRegistration(msg *pb.RegisteredNodeCheck) (*pb.RegisteredNodeConfirmation, 
+     error) -- Helper function to determine if node is successfully registered on the 
+     permissioning server. If not registration is rerun.
+
+4. Client Registrar[^9]
+  a. 	RegisterUser(msg *pb.ClientRegistration) (confirmation
+      *pb.SignedClientRegistrationConfirmations, err error) -- Signs a public key 
+      for the client to enable key negotiation with cMix nodes (through their 
+      gateways) on the network. Used to limit # of new clients that can access 
+      the network.
+
+There exist other auxilliary services (Authorizor, UDB, and NotificationsBot). These have wire protocol components but are not necessary as part of the core protocol. 
+
+
 ## Security Consideration
 
 - Defense in depth implies using multiple layers of encryption
@@ -215,3 +324,9 @@ Compulsion Attacks.
 [^1] https://git.xx.network/elixxir/registration
 [^3] https://git.xx.network/xx_network/comms/-/blob/ba23bfbdce748e0dad29d27556e31a313c5328ba/messages/messages.proto 
 [^4] https://git.xx.network/xx_network/comms/-/blob/ba23bfbdce748e0dad29d27556e31a313c5328ba/gossip/gossip.proto 
+[^5] https://git.xx.network/elixxir/comms/-/blob/dcd58978e446738d0fbbacbbaed9e5f74b0b6e46/mixmessages/mixmessages.proto
+[^6] https://git.xx.network/elixxir/comms/-/blob/5fd61d2f311fca63f4c7617db0089334624cf7d2/node/handler.go#L74
+[^7] https://git.xx.network/elixxir/comms/-/blob/cb33dbeed31dbf8aa19bbac9f7a0775697cbd0ff/gateway/handler.go#L25
+[^8] https://git.xx.network/elixxir/comms/-/blob/6f29a4b4f1e3fdf944086d160cd7ab43ae428f38/registration/handler.go#L64
+[^9] https://git.xx.network/elixxir/comms/-/blob/6f29a4b4f1e3fdf944086d160cd7ab43ae428f38/clientregistrar/handler.go#L65 
+
