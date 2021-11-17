@@ -6,7 +6,7 @@ mix network message transport along with an end to end
 encryption protocol used by the Elixxir chat application
 (known as "xx messenger", **citation needed**).
 
-As well soon show, these are rather two distinct protocols.
+As we'll soon show, these are rather two distinct protocols.
 The encryption protocol could be used with other transports,
 and likewise other types of applications could use the mix
 network transport protocol.
@@ -35,8 +35,10 @@ this:
 
 client -> gateway -> mix cascade -> gateway -> spool database
 
-Later on the recipient client can retrieve their messages by
-interacting with any of the gateways.
+Later on, the recipient client can retrieve their messages by
+interacting with any of the gateways and querying the proper
+message IDs. These message IDs are generated deterministically
+by the sender and recipient clients.
 
 The gateway nodes also have support for a plugin system so additional
 mixnet services may be added. That is, instead of delivering a message
