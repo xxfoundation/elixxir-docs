@@ -158,11 +158,12 @@ batch.
 
 **Future Mitigation**
 
-An advantageous design would be able to increase the mix entropy linearly
-with the number of cascades in the network as would be the case if the gateway
-nodes formed another two layers of continuous time mix nodes; in order to hide
-which cascade a given client message is destined to. This would be a good
-approach if we can overcome some of the associated engineering challenges.
+An advantageous design would be able to increase the mix entropy
+linearly with the number of cascades in the network as would be the
+case if the gateway nodes formed another two layers of continuous time
+mix nodes; in order to hide which cascade a given client message is
+destined to. This would be a good approach if we can overcome some of
+the associated engineering challenges.
 
 ### Tagging attacks
 
@@ -189,9 +190,15 @@ confirm the presense of the tag.
 
 ### N-1 attacks
 
+**Attack Description**
+
 An N-1 attack is a category of mixnet specific attacks where the
-adversary controls all but one message which is being mixed. Elixxir
-uses the cMix mixing strategy which has a fixed number of message
+adversary controls all but one message which is being mixed.
+In the context of a batch mix like cMix we can say that the
+adversary performing an n-1 attack is able to determine which output slot
+the target message is destined to.
+
+Elixxir uses the cMix mixing strategy which has a fixed number of message
 slots. However a timing schedule is imposed where gateways fill
 message slots with dummy messages if not enough messages were received
 before the mixing round deadline. An N-1 attack that would work
@@ -217,26 +224,65 @@ message slots except that of the target message.
 
 ### statistical disclosure attacks
 
-#### Short term statistical disclosure attacks
+#### Short term timing correlation attack
+
+**Attack Description**
+
+Short term timing correlation attacks use message timing to link
+messaging flowing into the ACN from clients with messages flowing out
+of the ACN to clients.
+
+**Attack Defences**
 
 These attacks don't apply to mixnets. Short term attacks should be
 prevented by the mixing strategy which adds latency and bitwise
 unlinkability creating uncertainty for the global passive adversary
-who is trying to link input and output messages for each mix in the route.
+who is trying to link input and output messages for each mix in the
+route.
 
-#### Long term statistical disclosure attacks (aka intersection attack)
+#### Long term statistical disclosure attacks
 
-Long term statistical disclosure attacks on mixnets are certainly
-viable in the general sense. However whether or not such attacks will
-succeed is very much dependent on client behavior because highly
-repetetive and predictable behavior makes it easier for the adversary.
+**Attack Description**
 
-In theory it should be possible to model user behavior in some
-simplified manner that allows a simulator or statistical model to be
-constructed that let's us identify the timed needed to mount a
-successful long term statistical disclosure attack. This might be
-important future work if we want to iterate the design towards
-stronger privacy notions.
+These attacks are also sometimes referred to as set intersection
+attacks. Generally speaking there are two varieties of such attacks:
+
+1. determine set recipients for target sender
+2. determine set of senders for target receiver
+
+This attack assumes a global passive adversary who watches
+the mix network. Everytime the target sender sends a messages,
+the adversary records a set of recipients that received
+a message from the sender's mix cascade. For each message
+the target sends, the set of recipients will be different.
+Over time the adversary records many such recipient sets and
+can assume that the intersections of such sets yields the set
+of recipients.
+
+**Attack Defences**
+
+Elixxir reduces the information leakage of intersection attacks
+by means of message ID collisions. Clients make use of
+deterministic message IDs as a lookup key for messages received
+over the mixnet. This results in many clients retreiving their
+messages via the same message ID. Thus the set intersections
+in the above attack would yield many more clients than
+the desired recipients for the target sender.
+
+**Future Work**
+
+Make use of some probability model to assist us in judiciously tuning
+the two mixnet parameters that mitigate this attack:
+
+1. Tune the message ID collision space
+2. Tune the mixing batch size (number of message slots)
+
+**Additional Future Work**
+
+This attack is also mitigated by hiding which mix cascade a given
+client is using. We will explore how to do this in another attack which
+we should reference here so we know that this is actually the solution
+to multiple attacks.
 
 ### High-level protocol traffic correlation attacks
 
