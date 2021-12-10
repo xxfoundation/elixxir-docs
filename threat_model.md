@@ -90,28 +90,39 @@ for either senders or receivers.
 ## Mixnet Attacks and Defenses
 
 All mixnets have attacks that are in each of these categories. In this
-section we enumerate our defenses or partial defenses for these attacks.
+section we summarize how the attack works and enumerate our defenses
+or partial defenses for these attacks. Here we attempt to
+exhaustively list ALL attacks and in doing so we organize them by
+category. If there are any attacks for which we have no mitigation
+then we shall mention this below.
 
 ### Compulsion attacks
 
-In this case compulsion attacks refer to situations where the
-adversary compells mix operators to hand over their private
-cryptographic key material or to compromise the mix in some way. In
-the case of Elixxir, the route is whatever mix cascade the client
-happens to be using. The adversary needs to compromise all the mixes
-in the cascade in order to successfully link the ingress messages with
-the egress messages.
+**Attack Description**
 
-Elixxir tries to protect against the compulsion attack in two primary ways:
+In the context of attacking mixnets, the compulsion attacks is when
+the adversary obtains control of the mix node or mix node private key
+material in order to determine the linkages between input and output
+messages for that mix node. This attack must be repeated in sequence for
+each mix node in the cascade in order to link the cascade inputs with
+the cascade outputs.
 
-1. The PKI selects mix nodes for composing cascade which are geographically
-distant from one another.
+**Attack Defences**
 
-2. Mix node key rotation: Mix cascades are only used for a short
-period of time. The PKI is continually generating more mix cascades
-and publishing them to the network. Adversaries cannot predict what a
-future cascade will be. If some mix keys are captured by the
-adversary they will only be useful for a limited period of time.
+Firstly, let it be known that Elixxir protects against the compulsion
+attack primarily with frequent mix node cmix private key
+rotations. The PKI is continually generating more mix cascades and
+publishing them to the network. Adversaries cannot predict what a
+future cascade will be. If some mix keys are captured by the adversary
+they will only be useful for a very limited period of time, a few
+seconds.
+
+Secondly, the PKI selects mix nodes for composing cascades which are
+geographically distant from one another. These cascade orderings are
+optimized to be spread across many Mutual Legal Assistance Treaties
+(MLATs) in order to make it more difficult for nation state
+adversaries to cooperate with one another in obtaining legal means of
+compelling mix node operators to give up control of their mix nodes.
 
 In some circumstances the compulsion attack may involve breaking some
 cryptographic protocols. Therefore the addition of the cryptographic
@@ -120,7 +131,9 @@ attacks more difficult by providing the adversary with another cryptographic
 protocol to break.
 
 ### Epistemic attacks
- 
+
+**Attack Description**
+
 Epistemic attacks are attacks conducted by an adversary who uses
 their knowledge of the target to their advantage. In the classical
 ACN literature examples of these attacks are described where the
@@ -128,36 +141,51 @@ network PKI information about all the network nodes is not uniformly
 distributed among the clients. The Adversary can identify clients
 based on their usage of the network.
 
-In our case simply by watching the mixnet traffic, one can learn the
-mix cascade that a given target client is using. Clients however do
-not send messages directly to their cascade. They send the message to
-a gateway node which relays the message to the cascade; however gateways
-only make use of one cascade and so it's trivial for a global passive
-adversary to determine which cascade a given client is using. Therefore
-the Elixxir mixnet anonymity set size is fixed as the number of slots
-per message batch.
+**Current Status**
 
-All that having been said, an advantageous design would be able to
-increase the anonymity set size linearly with the number of clients
-using the network as would be the case if the gateway servers formed
-another layer of mixing. This would be a good approach if we can
-overcome some of the associated engineering challenges.
+In our case simply by watching the mixnet traffic, one can learn the
+mix cascade that a given target client is using. This isn't a devastating
+attack, however it does limit the mix entropy to the number of message
+slots in a mixing batch.
+
+Clients however do not send messages directly to their cascade. They
+send the message to a gateway node which relays the message to the
+cascade's gateway; however gateways only make use of one cascade and
+so it's trivial for a global passive adversary to determine which
+cascade a given client is using. Therefore the Elixxir mixnet
+anonymity set size is fixed as the number of message slots per mixing
+batch.
+
+**Future Mitigation**
+
+An advantageous design would be able to increase the mix entropy linearly
+with the number of cascades in the network as would be the case if the gateway
+nodes formed another two layers of continuous time mix nodes; in order to hide
+which cascade a given client message is destined to. This would be a good
+approach if we can overcome some of the associated engineering challenges.
 
 ### Tagging attacks
+
+**Attack Description**
 
 In the classical mixnet literature tagging attacks usually refer to attacks
 where the adversary can discovery at least a 1-bit flip for confirmation.
 Whereas these bit flipping related confirmation attacks do not apply to
-non-cryptographically-malleable mixnet message formats.
+non-cryptographically-malleable mixnet message formats, such as cMix.
 
-All that having been said, for cMix and thus the Elixxir mixnet, there
-is a group homomorphic kind of tagging attack. In this case the first
-and last hop can collaborate: The first hop adds the tag by
-modulo-multiplying the tag by the message ciphertext. The last hop can
-check for the presence of the can and then remove the tag by
-modulo-multiplying the message by the tag inverse.
+For cMix and thus the Elixxir mixnet, there is a group homomorphic tagging
+attack which is summarized as follows:
 
-**Is this correct?**
+The first mix node in the cascade "adds it's tag" to the target message
+by means of modulo-multiplication. Later the last mix node in the cascade
+can confirm the presence of the tag by multiplying the tag inverse and checking
+that the output message format is well formed.
+
+**Attack Defence**
+
+This attack doesn't apply to Elixxir because well formed output messages are
+indistinguishable from pseudo random noise. Therefore the adversary cannot
+confirm the presense of the tag.
 
 ### N-1 attacks
 
