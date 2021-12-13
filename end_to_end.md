@@ -26,19 +26,24 @@ that can support a wide variety of applications. The clients connect
 directly to the gateways for all their network interactions. The first
 application to be developed by the Elixxir development team is a chat
 application that supports one on one and group chat. For the purpose
-of supporting the Elixxir chat application, the gateways interact with
-a message spool database so they can persist chat messages for later
-retrieval by the recipient client. The full end to end path looks like
-this:
+of persisting received messages from the mixnet, the gateways interact
+with each other in a gossip protocol so that all the gateways receive a
+copy of each message. Later clients can retrieve their messages from
+any of the gateways.
+
+The full end to end path looks like this:
 
 **FIXME**: add an explainatory diagram
 
-client -> gateway -> mix cascade -> gateway -> spool database
+client -> gateway -> mix cascade -> gateway gossip system
 
 Later on, the recipient client can retrieve their messages by
 interacting with any of the gateways and querying the proper
 message IDs. These message IDs are generated deterministically
-by the sender and recipient clients.
+by the sender and recipient clients such that there are many
+message ID collisions with other clients. When clients query
+for messages the gateways sends a bloom filter which the clients
+use to determine which the message IDs of messages persisted.
 
 The gateway nodes also have support for a plugin system so additional
 mixnet services may be added. That is, instead of delivering a message
