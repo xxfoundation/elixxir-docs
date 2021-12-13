@@ -167,7 +167,7 @@ the associated engineering challenges.
 
 ### Tagging attacks
 
-**Attack Description**
+**Tagging Attack Description**
 
 In the classical mixnet literature tagging attacks usually refer to attacks
 where the adversary can discovery at least a 1-bit flip for confirmation.
@@ -295,3 +295,19 @@ behavior which would cause additional privacy leaks.
 
 Perhaps in the future formal methods could help us gain more confidence
 there is no unexpected emergent protocol behavior.
+
+
+### cMix attacks mentioned in published academic papers
+
+The published paper entitled, "Attacks on cMix - Some Small Overlooked
+Details" mentions several attacks:
+
+* the cascade last mix node tagging attack
+
+This tagging attack is prevented by valid messages being
+indistinguishable from invalid messages.
+
+* The Insider Attack
+
+The paper describes a cMix attack that requires the adversary
+to compromise the last mix cascade node and the gateway node.
