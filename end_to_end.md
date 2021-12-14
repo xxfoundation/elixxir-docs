@@ -50,6 +50,47 @@ mixnet services may be added. That is, instead of delivering a message
 to a message spool, the message is instead passed on to the mixnet
 service plugin which then can determine the fate of the message.
 
+## The XX network Gateway wire protocol
+
+* elixxir:comms/messages/messages.proto: Defines all of services and structures
+  for the permissioning (registration), server, gateway, and clients in the cMix
+  protocol.
+
+The gateway service has the following gRPC service methods:
+
+
+```
+service Gateway {
+
+    // RequestClientKey returns a Nonce to the user
+    rpc RequestClientKey (SignedClientKeyRequest) returns (SignedKeyResponse) {
+    }
+
+    // PutMessage on the cMix Gateway
+    rpc PutMessage (GatewaySlot) returns (GatewaySlotResponse) {
+    }
+
+    // PutMessage on the cMix Gateway
+    rpc PutManyMessages (GatewaySlots) returns (GatewaySlotResponse) {
+    }
+
+
+    // Client -> Gateway unified polling
+    rpc Poll (GatewayPoll) returns (stream StreamChunk) {
+    }
+
+    // Client -> Gateway historical round request
+    rpc RequestHistoricalRounds(HistoricalRounds) returns (HistoricalRoundsResponse) {
+    }
+
+    // Client -> Gateway message request
+    rpc RequestMessages(GetMessages) returns (GetMessagesResponse) {
+    }
+
+}
+
+```
+
 
 # The Elixxir Chat End To End Cryptographic Protocol
 
