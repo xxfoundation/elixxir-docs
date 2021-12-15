@@ -88,8 +88,21 @@ service Gateway {
     }
 
 }
-
 ```
+
+### Sending messages
+
+`PutMessage` or `PutManyMessages` are used by clients to send messages. The return
+values for these two methods indicates whether or not the messages were accepted
+into message slots of the specified rounds. For example if all message slots are filled
+then the return value indicates the message was not accepted and the client must resend.
+
+### Receiving messages
+
+A bloom filter is returned as part of the stream and is used by the
+client to determine if a message ID has a message delivered or
+not. The client may call `RequestMessages` with a set of message IDs
+that have been initially confirmed with the bloom filter.
 
 
 # The Elixxir Chat End To End Cryptographic Protocol
