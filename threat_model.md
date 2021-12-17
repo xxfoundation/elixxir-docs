@@ -272,10 +272,11 @@ the desired recipients for the target sender.
 **Future Work**
 
 Make use of some probability model to assist us in judiciously tuning
-the two mixnet parameters that mitigate this attack:
+the few mixnet parameters that mitigate this attack:
 
 1. Tune the message ID collision space
 2. Tune the mixing batch size (number of message slots)
+3. Number of decoy messages to send and how frequent to send them
 
 **Additional Future Work**
 

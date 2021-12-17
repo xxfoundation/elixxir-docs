@@ -35,7 +35,7 @@ The full end to end path looks like this:
 
 **FIXME**: add an explainatory diagram
 
-client -> gateway -> mix cascade -> gateway gossip system
+client -> gateway -> mix cascade -> gateway
 
 Later on, the recipient client can retrieve their messages by
 interacting with any of the gateways and querying the proper
@@ -95,7 +95,8 @@ service Gateway {
 `PutMessage` or `PutManyMessages` are used by clients to send messages. The return
 values for these two methods indicates whether or not the messages were accepted
 into message slots of the specified rounds. For example if all message slots are filled
-then the return value indicates the message was not accepted and the client must resend.
+then the return value indicates the message was not accepted and the client must resend
+to a different round.
 
 ### Receiving messages
 
@@ -103,6 +104,19 @@ A bloom filter is returned as part of the stream and is used by the
 client to determine if a message ID has a message delivered or
 not. The client may call `RequestMessages` with a set of message IDs
 that have been initially confirmed with the bloom filter.
+
+## Message ID Collisions
+
+The message ID space is tuned intentionally to increase the
+probability of message ID collisions between clients. These collisions
+help protect against intersection attacks. Clients will retrieve
+multiple messages and in that sense each message ID represents a
+bucket of messages destined for multiple clients.
+
+Clients check the hash at the end of the message, the identity
+fingerprint.  If it matches their own identity fingerprint then the
+message can be processed with the cryptographic protocol described
+below.
 
 
 # The Elixxir Chat End To End Cryptographic Protocol
