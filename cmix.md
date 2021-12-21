@@ -20,9 +20,36 @@ in [an essay with a more verbose description]().
 
 **FIXME:** Mention the RFC for the large prime we are using for our ElGamal
 
-## Message types
+## Message Structure
 
 **FIXME:** Include gRPC schema, protocol semantics, network actors and description of protocol sequences.
+
+```
+                            Message Structure (not to scale)
++----------------------------------------------------------------------------------------------------+
+|                                               Message                                              |
+|                                          2*primeSize bits                                          |
++------------------------------------------+---------------------------------------------------------+
+|                 payloadA                 |                         payloadB                        |
+|              primeSize bits              |                     primeSize bits                      |
++---------+----------+---------------------+---------+-------+-----------+--------------+------------+
+| grpBitA |  keyFP   |      Contents1      | grpBitB |  MAC  | Contents2 | ephemeralRID | identityFP |
+|  1 bit  | 255 bits |       *below*       |  1 bit  | 255 b |  *below*  |   64 bits    |  200 bits  |
++ --------+----------+---------------------+---------+-------+-----------+--------------+------------+
+|                              Raw Contents                              |
+|                    2*primeSize - recipientID bits                      |
++------------------------------------------------------------------------+
+
+* size: size in bits of the data which is stored
+* Contents1 size = primeSize - grpBitASize - KeyFPLen - sizeSize
+* Contents2 size = primeSize - grpBitBSize - MacLen - RecipientIDLen - timestampSize
+* the size of the data in the two contents fields is stored within the "size" field
+
+/////Adherence to the group/////////////////////////////////////////////////////
+The first bits of keyFingerprint and MAC are enforced to be 0, thus ensuring
+PayloadA and PayloadB are within the group
+```
+
 
 ## Protocol Phases
 

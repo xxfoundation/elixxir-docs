@@ -259,7 +259,7 @@ Over time the adversary records many such recipient sets and
 can assume that the intersections of such sets yields the set
 of recipients.
 
-**Attack Defences**
+**Attack Defenses**
 
 Elixxir reduces the information leakage of intersection attacks
 by means of message ID collisions. Clients make use of
