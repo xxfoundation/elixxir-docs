@@ -117,13 +117,6 @@ future cascade will be. If some mix keys are captured by the adversary
 they will only be useful for a very limited period of time, a few
 seconds.
 
-Secondly, the PKI selects mix nodes for composing cascades which are
-geographically distant from one another. These cascade orderings are
-optimized to be spread across many Mutual Legal Assistance Treaties
-(MLATs) in order to make it more difficult for nation state
-adversaries to cooperate with one another in obtaining legal means of
-compelling mix node operators to give up control of their mix nodes.
-
 In some circumstances the compulsion attack may involve breaking some
 cryptographic protocols. Therefore the addition of the cryptographic
 wire protocol (Elixxir uses TLS) should make such cryptographic compulsion
@@ -222,6 +215,38 @@ message slots except that of the target message.
 
 **What is the Elixxir defense to this attack?**
 
+Gateway must accept messages for all cascades.
+
+Also Ben Wenger describes a future cMix variation:
+
+Instead of having just the first node collect messages to input into
+the cascade, you have every node in the team collect 1/teamsize of the
+batch size.
+
+You can have them all send these to the first node in
+order to be included in the cascade, but this would result in a
+latency increase for the time of that transmission (a back of the
+napkin estimate put this at 100~500ms of extra latency).  This extra
+latency can be eliminated by reconstructing the first pass of cmix
+(the unpermuted phase, known in the code as realtime decrypt) to
+operate as teamsize parallel cascades of with 1/teamsize slots. these
+would be constructed to start at Team Member and end at the first
+member of the team so it can then start the second permuted cascade as
+normal.
+
+Depending on the properties of the parallel cascade, this
+cascade may be faster than the current implementation because it is
+more parallelized.  Due to how the the final unwrapping phase (post
+permutation) is dependent on keys in both cascade phases, and how each
+node in the team add further keying material in the permutation phase,
+the ignoring of sub-cascades from the first pass would result in many
+garbled payloads, which as a result of the tagging attack defenses
+would be indistinguishable from any valid payloads they did include in
+their attempted n-1 attack, nullifying the attack under the
+assumptions of the tagging attack defenses, primarily the
+effectiveness of the overly dense address space.
+
+
 ### statistical disclosure attacks
 
 #### Short term timing correlation attack
@@ -312,3 +337,7 @@ indistinguishable from invalid messages.
 
 The paper describes a cMix attack that requires the adversary
 to compromise the last mix cascade node and the gateway node.
+
+
+## Denial of Service Attacks
+
