@@ -174,29 +174,6 @@ mix nodes; in order to hide which cascade a given client message is
 destined to. This would be a good approach if we can overcome some of
 the associated engineering challenges.
 
-### Tagging attacks
-
-**Tagging Attack Description**
-
-In the classical mixnet literature tagging attacks usually refer to attacks
-where the adversary can discovery at least a 1-bit flip for confirmation.
-Whereas these bit flipping related confirmation attacks do not apply to
-non-cryptographically-malleable mixnet message formats, such as cMix.
-
-For cMix and thus the Elixxir mixnet, there is a group homomorphic tagging
-attack which is summarized as follows:
-
-The first mix node in the cascade "adds it's tag" to the target message
-by means of modulo-multiplication. Later the last mix node in the cascade
-can confirm the presence of the tag by multiplying the tag inverse and checking
-that the output message format is well formed.
-
-**Attack Defence**
-
-This attack doesn't apply to Elixxir because well formed output messages are
-indistinguishable from pseudo random noise. Therefore the adversary cannot
-confirm the presense of the tag.
-
 ### N-1 attacks
 
 **Attack Description**
@@ -341,19 +318,39 @@ there is no unexpected emergent protocol behavior.
 
 ### cMix attacks mentioned in published academic papers
 
-The published paper entitled, "Attacks on cMix - Some Small Overlooked
-Details" mentions several attacks:
+#### Tagging attacks
 
-* the cascade last mix node tagging attack
+**Tagging Attack Description**
 
-This tagging attack is prevented by valid messages being
-indistinguishable from invalid messages.
+In the classical mixnet literature tagging attacks usually refer to attacks
+where the adversary can discovery at least a 1-bit flip for confirmation.
+Whereas these bit flipping related confirmation attacks do not apply to
+non-cryptographically-malleable mixnet message formats, such as cMix.
 
-* The Insider Attack
+For cMix and thus the Elixxir mixnet, there is a group homomorphic tagging
+attack which is summarized as follows:
 
-The paper describes a cMix attack that requires the adversary
-to compromise the last mix cascade node and the gateway node.
+The first mix node in the cascade "adds it's tag" to the target message
+by means of modulo-multiplication. Later the last mix node in the cascade
+can confirm the presence of the tag by multiplying the tag inverse and checking
+that the output message format is well formed.
 
+**Attack Defence**
+
+This attack doesn't apply to Elixxir because well formed output messages are
+indistinguishable from pseudo random noise. Therefore the adversary cannot
+confirm the presense of the tag. Likewise the tagging attack described in
+"Attacks on cMix - Some Small Overlooked Details" is also prevented by valid
+messages being indistinguishable from invalid messages.
+
+#### Insider Attack
+
+"Attacks on cMix - Some Small Overlooked Details" mentions
+the Insider Atack which does not apply to the Elixxir mixnet:
+
+**TODO: Write an explanation of why the Insider Attack doesn't work.**
 
 ## Denial of Service Attacks
 
+TODO: Discuss xx network perimeter rate limiting and the gossip protocols used by the gateways.
+Or even better, insert a link to the blog post discussing the rate limiting feature addition.
