@@ -37,6 +37,10 @@ The full end to end path looks like this:
 
 client -> gateway -> mix cascade -> gateway
 
+This transport protocol does not require all communication parties to
+be online at the same time. Messages are queued for up to two weeks in
+the gateway persistent message storage.
+
 Later on, the recipient client can retrieve their messages by
 interacting with any of the gateways and querying the proper
 message IDs. These message IDs are generated deterministically

@@ -3,16 +3,16 @@
 
 ## Introduction
 
-As of this writing the Elixxir mixnet only has one application, an end
-to end encrypted chat client which does one on one and group chat.
-However the Elixxir mixnet is designed for general purpose usage. It
-can support a wide variety of applications. We may end up designing
-several mixnet protocols to support these various applications. Each
-of these protocols will have different security and privacy
-properties. The purpose of this document is to describe the threat
-model for the entire mix network and it's basic protocol which is to
-be augmented by protocol composition for each specific mixnet
-protocol.
+As of this writing the Elixxir mixnet only has one application known
+as the xx messenger, an end to end encrypted chat client which does
+one on one and group chat.  However the Elixxir mixnet is designed for
+general purpose usage. It can support a wide variety of
+applications. We may end up designing several mixnet protocols to
+support these various applications. Each of these protocols will have
+different security and privacy properties. The purpose of this
+document is to describe the threat model for the entire mix network
+and it's basic protocol which is to be augmented by protocol
+composition for each specific mixnet protocol.
 
 Therefore to read the full threat model of a given application on the
 Elixxir mix network, you must read this section first, it provides the
@@ -49,16 +49,20 @@ identity. Likewise messages must be padded to a fixed length.
 
 ## Anonymity Set
 
-The Elixxir mix network does notion to hide which mix cascade a given
-client is using. Clients directly connect to gateways nodes which
-relay messages to the mix cascade. These gateways are only connected
-to one mix cascade so it's trivial for the global passive adversary
-determine the cascade.
+A this time the Elixxir mix network does not try to hide which mix
+cascade a given client is using for a given mix round. Clients
+directly connect to gateways nodes which relay messages to the mix
+cascade. These gateways are only connected to one mix cascade so it's
+trivial for the global passive adversary determine the mix cascade
+being used.
 
 If future design changes allowed the gateways to hide which mix
 cascade a given client is using then this would effectively let
 Elixxir's anonymity set size scale up linearly with the number of
-cascades. Currently however the anonymity set size is the number of
+cascades. Likewise we can measure in terms of Shannon entropy instead
+of anonymity set size, they are equivalent in terms of the uncertainty
+the adversary would have linking input messages with output messages.
+Currently however the anonymity set size is the number of
 message slots for a mix round no matter how many cascades there are.
 
 ## Privacy Notions
@@ -67,7 +71,7 @@ Just as cryptographers use hierarchical graphs of security notions to
 reason about cryptographic primitives, so too must we use privacy
 notions to reason about anonymous communication network privacy
 properties. ACN privacy notions describe precisely what kind of
-metadata cannot be prevented from leaking.  Furthermore these privacy
+metadata cannot be prevented from leaking. Furthermore these privacy
 notions can be used as a basis of comparison when looking at various
 anonymous communication protocols.
 
@@ -77,15 +81,27 @@ Schiffner, Eduard Jorswieck, Thorsten Strufe
 https://arxiv.org/abs/1812.05638
 
 After rereading this paper it is my best guess that the privacy notions
-for the Elixxir mixnet with the chat client is:
+for the Elixxir mixnet with the xx messenger chat client is:
 
+ - Sender Unobservability
+ - Receiver Unobservability
  - Sender Receiver Unlinkability
  - Sender Message Unlinkability
  - Receiver Message Unlinkability
 
-Currently Elixxir does not make use of any decoy traffic and that
-is why it does not provide any of the "Unobservability" notions
-for either senders or receivers.
+## Decoy Traffic
+
+Currently the xx messenger does make use of any decoy traffic and that
+is why it does provide the two "Unobservability" notions for both
+senders and receivers. In other words, xx messenger clients both send
+and receive decoy and legitimate messages. Therefore a passive
+network observer or a curious network operator cannot ever know with
+absolute certainty when a xx messenger client sends or receives a
+legitimate message.
+
+The decoy traffic also enhances the mixnet's resistance to intersection attacks
+which are also known as long term statistical disclosure attacks.
+See the section below ``Long term statistical disclosure attacks``.
 
 ## Mixnet Attacks and Defenses
 
