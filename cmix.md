@@ -69,8 +69,8 @@ https://datatracker.ietf.org/doc/html/rfc3526#section-5
 |                 payloadA                 |                         payloadB                        |
 |              primeSize bits              |                     primeSize bits                      |
 +---------+----------+---------------------+---------+-------+-----------+--------------+------------+
-| grpBitA |  keyFP   |      Contents1      | grpBitB |  MAC  | Contents2 | ephemeralRID | identityFP |
-|  1 bit  | 255 bits |       *below*       |  1 bit  | 255 b |  *below*  |   64 bits    |  200 bits  |
+| grpBitA |  keyFP   |version| Contents1   | grpBitB |  MAC  | Contents2 | ephemeralRID | identityFP |
+|  1 bit  | 255 bits |1 byte |  *below*    |  1 bit  | 255 b |  *below*  |   64 bits    |  200 bits  |
 + --------+----------+---------------------+---------+-------+-----------+--------------+------------+
 |                              Raw Contents                              |
 |                    2*primeSize - recipientID bits                      |
@@ -86,6 +86,29 @@ The first bits of keyFingerprint and MAC are enforced to be 0, thus ensuring
 PayloadA and PayloadB are within the group
 ```
 
+One byte is used to indicate the message format version because it's conceivable we could
+upgrade the message format in the future.
+
+The grpBitA and grpBitB bits are carefully set to avoid 0 vs 1 biasing which would allow
+for a probabalistic tagging attack:
+
+```
+SetGroupBits takes a message and a cyclic group and randomly sets
+the highest order bit in its 2 sub payloads, defaulting to 0 if 1
+would put the sub-payload outside of the cyclic group.
+
+WARNING: the behavior above results in 0 vs 1 biasing. in general, groups
+used have many (100+) leading 1s, which as a result would cause
+a bias of ~ 1:(1-2^-numLeadingBits). with a high number of leading bits,
+this is a non issue, but if a prime is chosen with few or no leading bits,
+this will cease to solve the tagging attack it is meant to fix
+
+Tagging attack: if the dumb solution of leaving the first bits as 0 is
+chosen, it is possible for an attacker to 75% of the time (when one or
+both leading bits flip to 1) identity a message they made multiplied
+garbage into for a tagging attack. This fix makes the leading its
+random in order to thwart that attack
+```
 
 ## Protocol Phases
 
