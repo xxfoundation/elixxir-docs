@@ -352,5 +352,7 @@ the Insider Atack which does not apply to the Elixxir mixnet:
 
 ## Denial of Service Attacks
 
-TODO: Discuss xx network perimeter rate limiting and the gossip protocols used by the gateways.
-Or even better, insert a link to the blog post discussing the rate limiting feature addition.
+For a discussion of the xx network perimeter rate limiting and the
+gossip protocols used by the gateways please refer to this blog post:
+
+https://xx.network/blog/ddos-defense
