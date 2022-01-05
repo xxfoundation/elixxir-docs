@@ -58,7 +58,10 @@ https://datatracker.ietf.org/doc/html/rfc3526#section-5
 
 ## Message Structure
 
-**FIXME:** Include gRPC schema, protocol semantics, network actors and description of protocol sequences.
+Due to the nature of how ElGamal encryption works, the cMix payload in the paper
+is the same size as the encryption keys. In the case of the Elixxir mix network
+we use two payloads (defined below as payloadA and payloadB), each are 4096 bits
+in size as our keys are 4096 bits.
 
 ```
                             Message Structure (not to scale)
@@ -86,11 +89,36 @@ The first bits of keyFingerprint and MAC are enforced to be 0, thus ensuring
 PayloadA and PayloadB are within the group
 ```
 
-One byte is used to indicate the message format version because it's conceivable we could
-upgrade the message format in the future.
+Contents1 and Contents2 are used to transmit the mix network client's
+payload whereas the other sections of the message have various other
+uses. Our source code [^0] represents this with a Message type in Go:
 
-The grpBitA and grpBitB bits are carefully set to avoid 0 vs 1 biasing which would allow
-for a probabalistic tagging attack:
+```
+// Message structure stores all the data serially. Subsequent fields point to
+// subsections of the serialised data.
+type Message struct {
+	data []byte
+
+	// Note: These are mapped to locations in the data object
+	payloadA []byte
+	payloadB []byte
+
+	keyFP        []byte
+	version      []byte
+	contents1    []byte
+	mac          []byte
+	contents2    []byte
+	ephemeralRID []byte // Ephemeral reception ID
+	identityFP   []byte // Identity fingerprint
+
+	rawContents []byte
+}
+```
+
+One byte is used to indicate the message format version because it's
+conceivable we could upgrade the message format in the future. The
+grpBitA and grpBitB bits are carefully set to avoid 0 vs 1 biasing
+which would allow for a probabalistic tagging attack:
 
 ```
 SetGroupBits takes a message and a cyclic group and randomly sets
@@ -110,6 +138,9 @@ garbage into for a tagging attack. This fix makes the leading its
 random in order to thwart that attack
 ```
 
+**FIXME:** Include gRPC schema, protocol semantics, network actors and description of protocol sequences.
+
+
 ## Protocol Phases
 
 **FIXME:** do we need to include any details about our implementation of these various protocol phases?
@@ -126,3 +157,7 @@ random in order to thwart that attack
 - Taher El Gamal. A public key cryptosystem and a signature scheme based on
   discrete logarithms. In Proceedings of CRYPTO 84 on Advances in cryptology,
   pages 10–18. Springer-Verlag New York, Inc., 1985.
+
+
+
+[^0] https://git.xx.network/elixxir/primitives/-/blob/release/format/message.go
