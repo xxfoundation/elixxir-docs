@@ -128,7 +128,7 @@ below.
 ## Abstract
 
 Here we discuss some design details of the end to end cryptographic
-protocols of the Elixxir mix network chat application known as xx
+protocols of the xx network chat application known as xx
 messenger.
 
 ## Introduction
@@ -138,6 +138,20 @@ additional requirement of bitwise indistinguishability. Meaning that
 we don't want our end to end message ciphertexts leaking any bits of
 information that helps an adversary distinguish some kind of metadata.
 
+Unlike common encrypted chat applications, here we cannot afford to
+exchange new keys with every message since the DH and SIDH keys take
+up most of the available payload in a cMix message. Therefore keys are
+exchanged less frequently than every message.
+
 ## Cryptographic primitives
 
+* ChaCha20: Length is 256 bits. Used for encrypting message payloads.
+* Blake2b: Length is 256 bits. Used as part of key generation, key
+  expansion, identity generation, and identification codes. Used to
+  combine Diffie–Helman and SIDH keys after key integration.
+* HMAC-SHA256: Length is 256 bits. Message HMACs.
+* Diffie–Helmen: Length is 3072 bits. Discrete log-based component of key negotiation.
+* SIDH: Length is 3024 bits. Quantum resistant component of key negotiation.
+
 ## Protocol Descriptions
+
