@@ -3,13 +3,14 @@
 
 Herein we shall present the designs of the end to end
 mix network message transport along with an end to end
-encryption protocol used by the Elixxir chat application
+encryption protocol used by the xx network chat application
 (known as "xx messenger", **citation needed**).
 
-As we'll soon show, these are rather two distinct protocols.
-The encryption protocol could be used with other transports,
-and likewise other types of applications could use the mix
-network transport protocol.
+As we'll soon see, these are rather two distinct protocols.  The
+encryption protocol could in theory be used with other transports but
+there would be counter productive since it's optimized for use with
+our cMix mix network. Likewise other types of applications besides xx
+messenger could use the mix network transport protocol.
 
 # The Elixxir End To End Transport Protocol
 
@@ -151,7 +152,59 @@ exchanged less frequently than every message.
   combine Diffie–Helman and SIDH keys after key integration.
 * HMAC-SHA256: Length is 256 bits. Message HMACs.
 * Diffie–Helmen: Length is 3072 bits. Discrete log-based component of key negotiation.
-* SIDH: Length is 3024 bits. Quantum resistant component of key negotiation.
+* SIDH: Length of public key is 3024 bits. Quantum resistant component of key negotiation.
 
-## Protocol Descriptions
+## Auth Request message format
+
+The Auth Request message is encapsulated in a series of nested structs.
+The inner most payload is known in our code as the Request Format.
+Request Format encapsulates two fields:
+
+   * ID
+   * Message Payload
+
+The Request Format is encapsulated within the Payload field of the
+"Encrypted Format" message. This Encrypted Format message type contains
+the following fields:
+
+   * Payload
+   * ownership proof
+   * SIDH public key
+
+The Encrypted Format message is in turn encapsulated by the Base
+Format message's "Payload" field and contains one other field
+containing a diffiehellman public key.
+
+   * Payload
+   * DHPublicKey
+
+The Encrypted Format message is finally encapsulated by the cMix message which
+has various fields described in our cMix specification document.
+
+This nested series of structs can be summarized in this Golang inspired pseudocode:
+
+    c := &CMixMessage {
+        ... // Various cMix fields
+        
+        Payload: BaseFormat {
+        
+            DHPublicKey: []byte{...},
+            
+            Payload: EncryptedFormat {
+            
+                OwnershipProof: []byte{...},
+                
+                SIDHPublicKey: []byte{...},
+                
+                Payload: RequestFormat {
+                
+                    ID: []byte{...},
+                    
+                    MessagePayload: []byte{...},
+                }
+            }
+        }
+    }
+
+
 
