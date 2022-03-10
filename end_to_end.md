@@ -171,9 +171,10 @@ the following fields:
    * ownership proof
    * SIDH public key
 
-The Encrypted Format message is in turn encapsulated by the Base
-Format message's "Payload" field and contains one other field
-containing a diffiehellman public key.
+The Encrypted Format message is encrypted and then MAC'ed, the
+ciphertext and MAC output is then encapsulated by the Base Format
+message's "Payload" field and contains one other field containing a
+diffiehellman public key.
 
    * Payload
    * DHPublicKey
@@ -207,4 +208,52 @@ This nested series of structs can be summarized in this Golang inspired pseudoco
     }
 
 
+## Auth Response message format
 
+The Auth Response message is encapsulated in a series of nested structs.
+The inner most payloa1d is known as Encrypted Format who's payload field is
+zero size. This Encrypted Format is encrypted and MAC'ed. The ciphertext and MAC
+output is then encapsulated by the Base Format which in turn is encapsulated by the
+cMix message.
+
+
+This nested series of structs can be summarized in this Golang inspired pseudocode:
+
+    c := &CMixMessage {
+        ... // Various cMix fields
+        
+        Payload: BaseFormat {
+        
+            DHPublicKey: []byte{...},
+            
+            Payload: EncryptedFormat {
+            
+                OwnershipProof: []byte{...},
+                
+                SIDHPublicKey: []byte{...},
+                
+                Payload: []byte{}, // Zero length byte slice.
+            }
+        }
+    }
+
+
+The ownership proofs in the Auth Request and Auth Response are
+generated with a function that has the following signature:
+
+	// Ownership proofs allow users to build short proofs they own public DH keys
+	func MakeOwnershipProof(myHistoricalPrivKey, partnerHistoricalPubKey *cyclic.Int,
+	grp *cyclic.Group) []byte {
+
+The ownership proof is simply a the hash of a Diffiehellman
+calculation. Or more precisely:
+
+	H(DH(myHistoricalPrivKey, partnerHistoricalPubKey) + "ownershipVector")
+
+	Where:
+	
+	* H(x) is a hash function
+	* DH(x, y) is the Diffiehellman function.
+
+Which is to say that "ownershipVector" vector is also hashed along
+with the Diffiehellman output.
