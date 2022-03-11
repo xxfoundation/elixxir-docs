@@ -154,35 +154,70 @@ exchanged less frequently than every message.
 * Diffie–Helmen: Length is 3072 bits. Discrete log-based component of key negotiation.
 * SIDH: Length of public key is 3024 bits. Quantum resistant component of key negotiation.
 
-## Auth Request message format
+## Auth Request Response Protocol
 
-The Auth Request message is encapsulated in a series of nested structs.
-The inner most payload is known in our code as the Request Format.
-Request Format encapsulates two fields:
+### Cryptographic Function Glossary
 
-   * ID
-   * Message Payload
+* H(x): H is a cryptographic hash function.
 
-The Request Format is encapsulated within the Payload field of the
-"Encrypted Format" message. This Encrypted Format message type contains
-the following fields:
+* DH(my_private_key, partner_public_key):
+  Diffiehellman function used to calculate a shared secret.
+
+* ownership_proof(my_private_key, partner_public_key):
+  The ownership proof is simply the hash of a Diffiehellman shared secret
+  and the ownership proof vector, defined as:
+
+  H(DH(my_private_key, partner_public_key) | "ownershipVector")
+
+  Which is to say that "ownershipVector" vector is also hashed along
+  with the Diffiehellman output.
+
+* E(key, payload): Stream-cipher encrypt the payload.
+
+* D(key, payload): Stream-cipher decrypt the payload.
+
+* Encrypt(key, payload): Encrypt and then MAC:
+  EncryptMAC(key, E(key, payload))
+
+* Decrypt(key, payload): MAC then Decrypt:
+  if MAC(key, payload) {
+	  D(key, payload)
+  }
+
+### Common message structures
+
+The Auth Request and Response protocol messages are both composed from
+the following common nested structures:
+
+* cMix Message: This message is the outer most protocol message and is
+  responsible for routing the message through the network in such a manner
+  as to leak very little metadata. See our [cMix section](cmix.md) for
+  a detailed discussion. Suffice it to say here we note that this message
+  encapsulates an encrypted Payload field.
+
+* Base Format Message: The Base Format Message encapsulates two fields:
+
+   * Payload
+   * DH_public_key
+
+* Encrypted Formate Message: The Encrypted Format Message encapsulated
+these encrypted fields:
 
    * Payload
    * ownership proof
    * SIDH public key
 
-The Encrypted Format message is encrypted and then MAC'ed, the
-ciphertext and MAC output is then encapsulated by the Base Format
-message's "Payload" field and contains one other field containing a
-diffiehellman public key.
+## Auth Request Message format
 
-   * Payload
-   * DHPublicKey
+The Auth Request Message is composed of a series of nested structs.
+The inner most payload is known as the Request Format Message and
+it encapsulated two fields:
 
-The Encrypted Format message is finally encapsulated by the cMix message which
-has various fields described in our cMix specification document.
+   * ID
+   * Message Payload
 
-This nested series of structs can be summarized in this Golang inspired pseudocode:
+This nested series of structs can be summarized programmatically with
+Golang inspired pseudocode, like so:
 
     c := &CMixMessage {
         ... // Various cMix fields
@@ -210,14 +245,14 @@ This nested series of structs can be summarized in this Golang inspired pseudoco
 
 ## Auth Response message format
 
-The Auth Response message is encapsulated in a series of nested structs.
-The inner most payloa1d is known as Encrypted Format who's payload field is
-zero size. This Encrypted Format is encrypted and MAC'ed. The ciphertext and MAC
-output is then encapsulated by the Base Format which in turn is encapsulated by the
-cMix message.
+The Auth Response message is encapsulated in a series of nested
+structs. The inner most payload is known as Encrypted Format Message
+who's payload field is zero size. This Encrypted Format is encrypted
+and MAC'ed. The ciphertext and MAC output is then encapsulated by the
+Base Format which in turn is encapsulated by the cMix message.
 
-
-This nested series of structs can be summarized in this Golang inspired pseudocode:
+This nested series of structs can be summarized programmatically with
+Golang inspired pseudocode, like so:
 
     c := &CMixMessage {
         ... // Various cMix fields
@@ -236,24 +271,3 @@ This nested series of structs can be summarized in this Golang inspired pseudoco
             }
         }
     }
-
-
-The ownership proofs in the Auth Request and Auth Response are
-generated with a function that has the following signature:
-
-	// Ownership proofs allow users to build short proofs they own public DH keys
-	func MakeOwnershipProof(myHistoricalPrivKey, partnerHistoricalPubKey *cyclic.Int,
-	grp *cyclic.Group) []byte {
-
-The ownership proof is simply a the hash of a Diffiehellman
-calculation. Or more precisely:
-
-	H(DH(myHistoricalPrivKey, partnerHistoricalPubKey) + "ownershipVector")
-
-	Where:
-	
-	* H(x) is a hash function
-	* DH(x, y) is the Diffiehellman function.
-
-Which is to say that "ownershipVector" vector is also hashed along
-with the Diffiehellman output.
