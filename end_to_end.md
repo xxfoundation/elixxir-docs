@@ -174,15 +174,15 @@ exchanged less frequently than every message.
   Which is to say that "ownershipVector" vector is also hashed along
   with the Diffiehellman output.
 
-* E(key, payload): Stream-cipher encrypt the payload.
+* E(key, payload): Stream-cipher encrypt payload.
 
-* D(key, payload): Stream-cipher decrypt the payload.
+* D(key, payload): Stream-cipher decrypt payload.
 
 * Encrypt(key, payload): Encrypt and then MAC:
   EncryptMAC(key, E(key, payload))
 
 * Decrypt(key, payload): MAC then Decrypt:
-  if MAC(key, payload) {
+  if MAC(key, payload) { // If MAC is valid...
 	  D(key, payload)
   }
 
@@ -191,13 +191,12 @@ exchanged less frequently than every message.
 This is a two party protocol with a couple of assumptions:
 
 1. Each party has a long term Diffiehellman key pair and a network ID.
-2. Each party knows their partner's Diffiehellman public key and network ID.
+2. Each party knows their partner's long term Diffiehellman public key and network ID.
 
-Each party then generates the following:
+Before anything is sent on the network, each party then generates the following:
 
 1. Ephemeral Diffiehellman key pair
-2. SIDH key pair
-3. Ownership proof
+2. Ephemeral SIDH key pair
 
 Let's work an example with Alice and Bob where Alice is the initiator
 who sends the Auth Request Message and Bob is the responder who
@@ -207,15 +206,17 @@ another's long term DH public key and Network ID.
 
 Alice's initial state contains:
 
-* alice_network_id: Alice's Network ID
-* alice_longterm_dh_private_key and alice_longterm_dh_public_key: Alice's longterm DH key pair
+* alice_network_id
+* alice_longterm_dh_private_key
+* alice_longterm_dh_public_key
 * bob_network_id
 * bob_longterm_dh_public_key
 
 Bob's initial state contains:
 
-* bob_network_id: Bob's Network ID
-* bob_longterm_dh_private_key and bob_longterm_dh_public_key: Bob's longterm DH key pair
+* bob_network_id
+* bob_longterm_dh_private_key
+* bob_longterm_dh_public_key
 * alice_network_id
 * alice_longterm_dh_public_key
 
@@ -243,7 +244,8 @@ Protocol steps:
 
 	symmetric_key = DH(alice_shorterm_dh_private_key, bob_longterm_dh_public_key)
 	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)
-	alice_auth_request = Encrypt(symmetric_key, alice_shorterm_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)
+	alice_auth_request = alice_shorterm_dh_public_key |
+	   Encrypt(symmetric_key, alice_shorterm_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)
 
 
 4. Bob receives alice_auth_request, decrypts it and computes a reply denoted as
@@ -254,7 +256,27 @@ Protocol steps:
 
 	symmetric_key = DH(bob_shorterm_dh_private_key, alice_longterm_dh_public_key)
 	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)
-	bob_auth_response = Encrypt(symmetric_key, bob_shorterm_sidh_public_key | bob_ownership_proof | bob_network_id)
+	bob_auth_response = bob_shorterm_dh_public_key | Encrypt(symmetric_key, bob_shorterm_sidh_public_key | bob_ownership_proof | bob_network_id)
+
+5. Alice receives bob_auth_response and decrypts it:
+
+	symmetric_key = DH(alice_longterm_dh_private_key, bob_shorterm_dh_public_key)
+	bob_shorterm_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)
+
+Protocol Conclusion State:
+
+The conclusion to this protocol is that Alice and Bob's states were updated with the following information:
+
+Alice's state:
+	* bob_shorterm_sidh_public_key
+	* bob_ownership_proof
+	* bob_network_id
+
+Bob's state:
+	* alice_shorterm_sidh_public_key
+	* alice_payload
+	* alice_ownership_proof
+	* alice_network_id
 
 
 ### Common message structures
