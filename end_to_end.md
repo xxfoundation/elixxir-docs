@@ -199,7 +199,62 @@ Each party then generates the following:
 2. SIDH key pair
 3. Ownership proof
 
+Let's work an example with Alice and Bob where Alice is the initiator
+who sends the Auth Request Message and Bob is the responder who
+replies with the Auth Response Message. Through the use of the xx
+network's User Discovery protocol Alice and Bob each learn one
+another's long term DH public key and Network ID.
 
+Alice's initial state contains:
+
+* alice_network_id: Alice's Network ID
+* alice_longterm_dh_private_key and alice_longterm_dh_public_key: Alice's longterm DH key pair
+* bob_network_id
+* bob_longterm_dh_public_key
+
+Bob's initial state contains:
+
+* bob_network_id: Bob's Network ID
+* bob_longterm_dh_private_key and bob_longterm_dh_public_key: Bob's longterm DH key pair
+* alice_network_id
+* alice_longterm_dh_public_key
+
+Protocol steps:
+
+1. Alice generates:
+   a. short-term DH key pair:
+	   * alice_shorterm_dh_private_key
+	   * alice_shorterm_dh_public_key
+   b. short-term SIDH key pair:
+	   * alice_shorterm_sidh_private_key
+	   * alice_shorterm_sidh_public_key
+   c. payload:
+	   * alice_payload
+
+2. Bob generates:
+   a. short-term DH key pair:
+	   * bob_shorterm_dh_private_key
+	   * bob_shorterm_dh_public_key
+   b. short-term SIDH key pair:
+	   * bob_shorterm_sidh_private_key
+	   * bob_shorterm_sidh_public_key
+
+3. Alice computes the Auth Request Message, denoted as alice_auth_request, and sends it to Bob:
+
+	symmetric_key = DH(alice_shorterm_dh_private_key, bob_longterm_dh_public_key)
+	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)
+	alice_auth_request = Encrypt(symmetric_key, alice_shorterm_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)
+
+
+4. Bob receives alice_auth_request, decrypts it and computes a reply denoted as
+   bob_auth_response:
+
+	alice_shorterm_sidh_public_key, alice_payload, alice_ownership_proof, alice_network_id
+	   = Decrypt(DH(bob_longterm_dh_private_key, alice_shorterm_dh_public_key), alice_auth_request)
+
+	symmetric_key = DH(bob_shorterm_dh_private_key, alice_longterm_dh_public_key)
+	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)
+	bob_auth_response = Encrypt(symmetric_key, bob_shorterm_sidh_public_key | bob_ownership_proof | bob_network_id)
 
 
 ### Common message structures
