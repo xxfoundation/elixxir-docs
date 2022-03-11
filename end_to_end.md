@@ -158,6 +158,8 @@ exchanged less frequently than every message.
 
 ### Cryptographic Function Glossary
 
+* |: byte concatenation
+
 * H(x): H is a cryptographic hash function.
 
 * DH(my_private_key, partner_public_key):
@@ -183,6 +185,22 @@ exchanged less frequently than every message.
   if MAC(key, payload) {
 	  D(key, payload)
   }
+
+### High level Auth protocol description
+
+This is a two party protocol with a couple of assumptions:
+
+1. Each party has a long term Diffiehellman key pair and a network ID.
+2. Each party knows their partner's Diffiehellman public key and network ID.
+
+Each party then generates the following:
+
+1. Ephemeral Diffiehellman key pair
+2. SIDH key pair
+3. Ownership proof
+
+
+
 
 ### Common message structures
 
