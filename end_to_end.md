@@ -146,7 +146,7 @@ exchanged less frequently than every message.
 
 ## Cryptographic primitives
 
-* ChaCha20: Length is 256 bits. Used for encrypting message payloads.
+* XChaCha20: Length is 256 bits. Used for encrypting message payloads.
 * Blake2b: Length is 256 bits. Used as part of key generation, key
   expansion, identity generation, and identification codes. Used to
   combine Diffie–Helman and SIDH keys after key integration.
@@ -156,13 +156,14 @@ exchanged less frequently than every message.
 
 ## Auth Request Response Protocol
 
-The Auth Request Response Protocol is a two party authenticated key
-exchange protocol which requires explicit authorization of both
-users. This protocol is used by xx messenger and is a prerequisite to
-it's establishing a secure communications channel between two clients.
-It can be initiated via client exchange of QR codes or by means of the
-[user discovery](https://xxnetwork.wiki/User_Discovery) protocol.
-Either way the exchange of both party's network IDs is a prerequisite.
+The Auth Request Response Protocol is essentially a two way handshake
+with preshared keys. It should also be noted that the exchange is not
+only fully authenticated but is interactive and requires explicit
+authorization of both parties. This protocol is used by xx messenger
+and is a prerequisite to it's establishing a secure communications
+channel between two clients. It can be initiated via client exchange
+of QR codes or by means of the [user discovery](https://xxnetwork.wiki/User_Discovery)
+protocol. Either way the exchange of both party's network IDs is a prerequisite.
 
 
 ### Cryptographic Function Glossary
