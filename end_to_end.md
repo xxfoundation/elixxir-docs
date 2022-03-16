@@ -259,7 +259,7 @@ Protocol steps:
 
 
 4. Bob receives alice_auth_request, decrypts it and computes a reply denoted as
-   bob_auth_response:
+   bob_auth_response, and sends it to Alice:
 
 	alice_shorterm_sidh_public_key, alice_payload, alice_ownership_proof, alice_network_id
 	   = Decrypt(DH(bob_longterm_dh_private_key, alice_shorterm_dh_public_key), alice_auth_request)
