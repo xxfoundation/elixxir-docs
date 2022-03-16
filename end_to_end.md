@@ -268,11 +268,13 @@ Protocol Conclusion State:
 The conclusion to this protocol is that Alice and Bob's states were updated with the following information:
 
 Alice's state:
+    * bob_shorterm_dh_public_key
 	* bob_shorterm_sidh_public_key
 	* bob_ownership_proof
 	* bob_network_id
 
 Bob's state:
+	* alice_shorterm_dh_public_key
 	* alice_shorterm_sidh_public_key
 	* alice_payload
 	* alice_ownership_proof
