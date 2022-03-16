@@ -151,10 +151,19 @@ exchanged less frequently than every message.
   expansion, identity generation, and identification codes. Used to
   combine Diffie–Helman and SIDH keys after key integration.
 * HMAC-SHA256: Length is 256 bits. Message HMACs.
-* Diffie–Helmen: Length is 3072 bits. Discrete log-based component of key negotiation.
-* SIDH: Length of public key is 3024 bits. Quantum resistant component of key negotiation.
+* [Diffie–Helmen](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange): Length is 3072 bits. Discrete log-based component of key negotiation.
+* [SIDH](https://sike.org/files/SIDH-spec.pdf): Length of public key is 3024 bits. Quantum resistant component of key negotiation.
 
 ## Auth Request Response Protocol
+
+The Auth Request Response Protocol is a two party authenticated key
+exchange protocol which requires explicit authorization of both
+users. This protocol is used by xx messenger and is a prerequisite to
+it's establishing a secure communications channel between two clients.
+It can be initiated via client exchange of QR codes or by means of the
+[user discovery](https://xxnetwork.wiki/User_Discovery) protocol.
+Either way the exchange of both party's network IDs is a prerequisite.
+
 
 ### Cryptographic Function Glossary
 
@@ -304,7 +313,7 @@ these encrypted fields:
    * ownership proof
    * SIDH public key
 
-## Auth Request Message format
+### Auth Request Message format
 
 The Auth Request Message is composed of a series of nested structs.
 The inner most payload is known as the Request Format Message and
@@ -340,7 +349,7 @@ Golang inspired pseudocode, like so:
     }
 
 
-## Auth Response message format
+### Auth Response message format
 
 The Auth Response message is encapsulated in a series of nested
 structs. The inner most payload is known as Encrypted Format Message
