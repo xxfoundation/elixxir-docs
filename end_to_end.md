@@ -235,20 +235,20 @@ Bob's initial state contains:
 Protocol steps:
 
 1. Alice generates:
-   a. short-term DH key pair:
+   * short-term DH key pair:
 	   * alice_shorterm_dh_private_key
 	   * alice_shorterm_dh_public_key
-   b. short-term SIDH key pair:
+   * short-term SIDH key pair:
 	   * alice_shorterm_sidh_private_key
 	   * alice_shorterm_sidh_public_key
-   c. payload:
+   * payload:
 	   * alice_payload
 
 2. Bob generates:
-   a. short-term DH key pair:
+   * short-term DH key pair:
 	   * bob_shorterm_dh_private_key
 	   * bob_shorterm_dh_public_key
-   b. short-term SIDH key pair:
+   * short-term SIDH key pair:
 	   * bob_shorterm_sidh_private_key
 	   * bob_shorterm_sidh_public_key
 
