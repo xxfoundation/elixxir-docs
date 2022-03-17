@@ -252,43 +252,45 @@ Protocol steps:
 
 3. Alice computes the Auth Request Message, denoted as alice_auth_request, and sends it to Bob:
 
-	symmetric_key = DH(alice_shorterm_dh_private_key, bob_longterm_dh_public_key)
-	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)
+	symmetric_key = DH(alice_shorterm_dh_private_key, bob_longterm_dh_public_key)  
+	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)  
 	alice_auth_request = alice_shorterm_dh_public_key |
-	   Encrypt(symmetric_key, alice_shorterm_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)
+	   Encrypt(symmetric_key, alice_shorterm_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)  
 
 
 4. Bob receives alice_auth_request, decrypts it and computes a reply denoted as
    bob_auth_response, and sends it to Alice:
 
 	alice_shorterm_sidh_public_key, alice_payload, alice_ownership_proof, alice_network_id
-	   = Decrypt(DH(bob_longterm_dh_private_key, alice_shorterm_dh_public_key), alice_auth_request)
+	   = Decrypt(DH(bob_longterm_dh_private_key, alice_shorterm_dh_public_key), alice_auth_request)  
 
-	symmetric_key = DH(bob_shorterm_dh_private_key, alice_longterm_dh_public_key)
-	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)
-	bob_auth_response = bob_shorterm_dh_public_key | Encrypt(symmetric_key, bob_shorterm_sidh_public_key | bob_ownership_proof | bob_network_id)
+	symmetric_key = DH(bob_shorterm_dh_private_key, alice_longterm_dh_public_key)  
+	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)  
+	bob_auth_response = bob_shorterm_dh_public_key | Encrypt(symmetric_key, bob_shorterm_sidh_public_key | bob_ownership_proof | bob_network_id)  
 
 5. Alice receives bob_auth_response and decrypts it:
 
-	symmetric_key = DH(alice_longterm_dh_private_key, bob_shorterm_dh_public_key)
-	bob_shorterm_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)
+	symmetric_key = DH(alice_longterm_dh_private_key, bob_shorterm_dh_public_key)  
+	bob_shorterm_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)  
 
 Protocol Conclusion State:
 
 The conclusion to this protocol is that Alice and Bob's states were updated with the following information:
 
 Alice's state:
-    * bob_shorterm_dh_public_key
-	* bob_shorterm_sidh_public_key
-	* bob_ownership_proof
-	* bob_network_id
+
+* bob_shorterm_dh_public_key
+* bob_shorterm_sidh_public_key
+* bob_ownership_proof
+* bob_network_id
 
 Bob's state:
-	* alice_shorterm_dh_public_key
-	* alice_shorterm_sidh_public_key
-	* alice_payload
-	* alice_ownership_proof
-	* alice_network_id
+
+* alice_shorterm_dh_public_key
+* alice_shorterm_sidh_public_key
+* alice_payload
+* alice_ownership_proof
+* alice_network_id
 
 
 ### Common message structures
