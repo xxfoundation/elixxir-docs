@@ -198,10 +198,12 @@ protocol. Either way the exchange of both party's network IDs is a prerequisite.
 
 ### High level Auth protocol description
 
+![handshake ladder diagram](images/two_way_handshake.png)
+
 This is a two party protocol with a couple of assumptions:
 
 1. Each party has a long term Diffiehellman key pair and a network ID.
-2. Each party knows their partner's long term Diffiehellman public key and network ID.
+2. Each party learns their partner's long term Diffiehellman public key and network ID by means of a QR code or by using the user discovery protocol.
 
 Before anything is sent on the network, each party then generates the following:
 
