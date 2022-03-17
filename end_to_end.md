@@ -189,7 +189,7 @@ protocol. Either way the exchange of both party's network IDs is a prerequisite.
 * D(key, payload): Stream-cipher decrypt payload.
 
 * Encrypt(key, payload): Encrypt and then MAC:
-  EncryptMAC(key, E(key, payload))
+  MAC(key, E(key, payload))
 
 * Decrypt(key, payload): MAC then Decrypt:
   if MAC(key, payload) { // If MAC is valid...
