@@ -156,15 +156,20 @@ exchanged less frequently than every message.
 
 ## Auth Request Response Protocol
 
-The Auth Request Response Protocol is essentially a two way handshake
-with preshared keys. It should also be noted that the exchange is not
-only fully authenticated but is interactive and requires explicit
-authorization of both parties. This protocol is used by xx messenger
-and is a prerequisite to it's establishing a secure communications
-channel between two clients. It can be initiated via client exchange
-of QR codes or by means of the [user discovery](https://xxnetwork.wiki/User_Discovery)
-protocol. Either way the exchange of both party's network IDs is a prerequisite.
+The Auth Request Response Protocol is similar a two way handshake
+with preshared keys whereas in this case only the sender has the
+longterm identity key and network ID of the other party.
+It should also be noted that the exchange is fully authenticated and
+is interactive; it requires explicit authorization of both parties.
+This protocol is used by xx messenger and is a prerequisite to it's
+establishing a secure communications channel between two clients.
+It can be initiated via client exchange of QR codes or by means of the
+[user discovery](https://xxnetwork.wiki/User_Discovery) protocol.
+Either way the exchange of both party's network IDs is a prerequisite.
 
+An important property of this protocol is that it does not leak long term
+identity keys. If it did leak such keys then there would be no point in using
+a mix network to hide the identities of the communicating parties.
 
 ### Cryptographic Function Glossary
 
@@ -203,7 +208,9 @@ protocol. Either way the exchange of both party's network IDs is a prerequisite.
 This is a two party protocol with a couple of assumptions:
 
 1. Each party has a long term Diffiehellman key pair and a network ID.
-2. Each party learns their partner's long term Diffiehellman public key and network ID by means of a QR code or by using the user discovery protocol.
+2. The sender learns their partner's long term Diffiehellman public
+   key and network ID by means of a QR code or by using the user
+   discovery database.
 
 Before anything is sent on the network, each party then generates the following:
 
@@ -213,8 +220,11 @@ Before anything is sent on the network, each party then generates the following:
 Let's work an example with Alice and Bob where Alice is the initiator
 who sends the Auth Request Message and Bob is the responder who
 replies with the Auth Response Message. Through the use of the xx
-network's User Discovery protocol Alice and Bob each learn one
-another's long term DH public key and Network ID.
+network's User Discovery protocol Alice first learns Bob's long term
+DH public key and Network ID. Once Bob decrypts the Auth Request he
+receives from Alice, he learns Alice's network ID and can use this to
+retrieve Alice's long term DH public key and confirm the ownership proof
+she sends.
 
 Alice's initial state contains:
 
@@ -234,50 +244,51 @@ Bob's initial state contains:
 
 Protocol steps:
 
-1. Alice generates:
-   * short-term DH key pair:
-	   * alice_shorterm_dh_private_key
-	   * alice_shorterm_dh_public_key
-   * short-term SIDH key pair:
-	   * alice_shorterm_sidh_private_key
-	   * alice_shorterm_sidh_public_key
-   * payload:
-	   * alice_payload
+1. Alice generates some short term keys and then computes the Auth Request
+   Message, denoted as alice_auth_request, and sends it to Bob:
 
-2. Bob generates:
-   * short-term DH key pair:
-	   * bob_shorterm_dh_private_key
-	   * bob_shorterm_dh_public_key
-   * short-term SIDH key pair:
-	   * bob_shorterm_sidh_private_key
-	   * bob_shorterm_sidh_public_key
-
-3. Alice computes the Auth Request Message, denoted as alice_auth_request, and sends it to Bob:
+	Keys generated:
+	* short-term DH key pair:
+		* alice_shorterm_dh_private_key
+		* alice_shorterm_dh_public_key
+	* short-term SIDH key pair:
+		* alice_shorterm_sidh_private_key
+		* alice_shorterm_sidh_public_key
+	* payload:
+		* alice_payload
 
 	symmetric_key = DH(alice_shorterm_dh_private_key, bob_longterm_dh_public_key)  
 	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)  
 	alice_auth_request = alice_shorterm_dh_public_key |
 	   Encrypt(symmetric_key, alice_shorterm_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)  
 
-
-4. Bob receives alice_auth_request, decrypts it and computes a reply denoted as
-   bob_auth_response, and sends it to Alice:
+2. Bob receives alice_auth_request, decrypts it, generates some short term keys
+   and computes a reply denoted as bob_auth_response, and sends it to Alice:
 
 	alice_shorterm_sidh_public_key, alice_payload, alice_ownership_proof, alice_network_id
 	   = Decrypt(DH(bob_longterm_dh_private_key, alice_shorterm_dh_public_key), alice_auth_request)  
+
+	Keys generated:
+	* short-term DH key pair:
+		* bob_shorterm_dh_private_key
+		* bob_shorterm_dh_public_key
+	* short-term SIDH key pair:
+		* bob_shorterm_sidh_private_key
+		* bob_shorterm_sidh_public_key
 
 	symmetric_key = DH(bob_shorterm_dh_private_key, alice_longterm_dh_public_key)  
 	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)  
 	bob_auth_response = bob_shorterm_dh_public_key | Encrypt(symmetric_key, bob_shorterm_sidh_public_key | bob_ownership_proof | bob_network_id)  
 
-5. Alice receives bob_auth_response and decrypts it:
+3. Alice receives bob_auth_response and decrypts it:
 
 	symmetric_key = DH(alice_longterm_dh_private_key, bob_shorterm_dh_public_key)  
 	bob_shorterm_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)  
 
 Protocol Conclusion State:
 
-The conclusion to this protocol is that Alice and Bob's states were updated with the following information:
+The conclusion to this protocol is that Alice and Bob's states were
+updated with the following information:
 
 Alice's state:
 
