@@ -203,7 +203,7 @@ a mix network to hide the identities of the communicating parties.
 
 ### High level Auth protocol description
 
-![handshake ladder diagram](images/two_way_handshake.png)
+![handshake ladder diagram](images/auth_protocol.png)
 
 This is a two party protocol with a couple of assumptions:
 
@@ -393,3 +393,7 @@ Golang inspired pseudocode, like so:
             }
         }
     }
+
+## Symmetric Key Derivation
+
+### Cryptographic operations
