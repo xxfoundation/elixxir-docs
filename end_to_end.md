@@ -167,9 +167,10 @@ It can be initiated via client exchange of QR codes or by means of the
 [user discovery](https://xxnetwork.wiki/User_Discovery) protocol.
 Either way the exchange of both party's network IDs is a prerequisite.
 
-An important property of this protocol is that it does not leak long term
-identity keys. If it did leak such keys then there would be no point in using
-a mix network to hide the identities of the communicating parties.
+An important property of this protocol is that it does not leak long
+term identity keys or network IDs. If it did leak such data then there
+would be no point in using a mix network to hide the identities of the
+communicating parties.
 
 ### Cryptographic Function Glossary
 
@@ -204,6 +205,11 @@ a mix network to hide the identities of the communicating parties.
 ### High level Auth protocol description
 
 ![handshake ladder diagram](images/auth_protocol.png)
+
+**Note**: Since the SIDH keypairs are ephemeral encrypting the
+public SIDH keys isn't necessary but is done so at this time
+because it's an artifact of our implementation.
+
 
 This is a two party protocol with a couple of assumptions:
 
