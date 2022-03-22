@@ -400,6 +400,86 @@ Golang inspired pseudocode, like so:
         }
     }
 
-## Symmetric Key Derivation
 
-### Cryptographic operations
+## End to End Session Handling
+
+### Sessions in End to End Encryption
+
+A session is a single state within the ratchet. Sessions are discussed
+in more detail in the key rotation section. However here we'll
+briefly mention that sessions can rotate quickly if both parties are
+sending many frequent messages and sessions can last a while if only
+one party is sending messages. This is an intentional design element
+that is a consequence of a more fundamental and design constraint:
+"We don't use elliptic curve cryptography."
+
+Rekeying requires most of the payload of one cMix message and therefore
+our end to end protocol minimizes the number of rekeys in comparison
+to most double ratchet key protocols which rekey with every message sent.
+
+### Per session key derivation
+
+Communicating clients form a session and the prerequisite for that is
+the exchange of keys handled by the Auth protocol described in the
+previous chapter. Both communicating clients exchange their DH public
+keys and their SIDH public keys. Each session derives what is known
+in our code base as a "baseKey" which is deterministically derived
+from the DH and SIDH shared secrets.
+
+The two shared secrets are hashed together using Blake2b and then
+expanded using HKDF-Blake2b. However currently the HKDF expansion
+output is feed into an algorithm for selecting cyclic group
+curves. The "baseKey" is an element of the cyclic group but this isn't
+currently a requirement and we have plans to change this in the
+future.
+
+### Per Message Key Derivation and per Message Encryption/Decryption
+
+Each key in a session is deterministically generated when it's needed from
+three input arguments:
+
+1. session's baseKey
+2. relationship fingerprint
+3. keyID
+
+First a relationship fingerprint is computed. For a given pair of
+communication partners there are two relationship fingerprints. If for
+example Alice and Bob are communicating then Alice computes a
+relationship fingerprint for when she receives a message from Bob and
+another one for when she Sends a message to Bob.
+
+The relationship fingerprint is essentially a deterministic hash of
+both party's public DH keys and their network IDs. It looks something
+like this in pseuodo code:
+
+	func MakeRelationshipFingerprint(pubkeyA, pubkeyB *cyclic.Int, sender,
+		receiver *id.ID) []byte {
+		if pubKeyA > pubKeyB {
+			return H(pubKeyA | pubKeyB | senderID | receiverID)
+		} elsif pubkeyA < pubKeyB {
+			return H(pubKeyB | pubKeyA | senderID | receiverID)
+		} else {
+			// error if keys are equal
+		}
+	}
+
+As for the keyID, it's essentially a key integer which clients keep
+track of and increment when it's used. We calculate the key by hashing
+the first half of the baseKey with the keyID and the salts:
+
+	data := basekey
+	data = data[:len(data)/2]
+	key := H(data | keyID | salts...)
+
+### Message Tagging and Identification
+
+fingerprint generation
+fingerprints in the cMix payload
+explains about a map of fingerprints to keys
+
+### Design Privacy Considerations
+
+1. Don't leak identities to non-recipients. Using deterministic
+   message fingerprints to tag messages and avoid trial decryption.
+2. Minimize ratchet rekeying because these rekeying operations leak
+   metadata since they require almost an entire cMix packet payload.
