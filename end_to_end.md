@@ -440,7 +440,7 @@ three input arguments:
 
 1. session's baseKey
 2. relationship fingerprint
-3. keyID
+3. key ID
 
 First a relationship fingerprint is computed. For a given pair of
 communication partners there are two relationship fingerprints. If for
@@ -463,21 +463,40 @@ like this in pseuodo code:
 		}
 	}
 
-As for the keyID, it's essentially a key integer which clients keep
-track of and increment when it's used. We calculate the key by hashing
-the first half of the baseKey with the keyID and the salts:
+As for the key ID, it's essentially a unique integer for each key in a
+given session. We calculate the key by hashing the first half of the
+baseKey with the keyID and the relationship fingerprint:
 
-	data := basekey
+    data := basekey
 	data = data[:len(data)/2]
-	key := H(data | keyID | salts...)
+	key := H(data | key_id | relationship_fingerprint...)
+
+The message Encrypt and Decrypt functions compute the symmetric key
+as described above. The Encrypt function also sets the cMix message
+fingerprint and payload MAC. Whereas the Decrypt function verifies
+the payload ciphertext MAC before decrypting.
 
 ### Message Tagging and Identification
 
-fingerprint generation
-fingerprints in the cMix payload
-explains about a map of fingerprints to keys
+Each cMix message is tagged with a message fingerprint which is
+used to avoid any trial decryption. The recipient client will be
+able to look up a key based on it's mapped association with a
+given message fingerprint.
 
-### Design Privacy Considerations
+Per message fingerprints are derived from three inputs:
+
+1. session basekey
+2. key ID
+3. relationship fingerprint
+
+The second half of the basekey is hashed along with the key ID and
+the relationship fingerprint to derive the per message fingerprint:
+
+	data := basekey
+	data = data[len(data)/2:]
+	message_fingerprint := H(data | key_id | relationship_fingerprint...)
+
+### Privacy Design Considerations
 
 1. Don't leak identities to non-recipients. Using deterministic
    message fingerprints to tag messages and avoid trial decryption.
