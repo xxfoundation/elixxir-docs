@@ -267,16 +267,20 @@ Protocol steps:
 	* payload:
 		* alice_payload
 
+```
 	symmetric_key = DH(alice_ephemeral_dh_private_key, bob_longterm_dh_public_key)  
 	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)  
 	alice_auth_request = alice_ephemeral_dh_public_key |
 	   Encrypt(symmetric_key, alice_ephemeral_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)  
+```
 
 2. Bob receives alice_auth_request, decrypts it, generates some short term keys
    and computes a reply denoted as bob_auth_response, and sends it to Alice:
 
+```
 	alice_ephemeral_sidh_public_key, alice_payload, alice_ownership_proof, alice_network_id
 	   = Decrypt(DH(bob_longterm_dh_private_key, alice_ephemeral_dh_public_key), alice_auth_request)  
+```
 
 	Keys generated:
 	* short-term DH key pair:
@@ -292,8 +296,10 @@ Protocol steps:
 
 3. Alice receives bob_auth_response and decrypts it:
 
+```
 	symmetric_key = DH(alice_longterm_dh_private_key, bob_ephemeral_dh_public_key)  
 	bob_ephemeral_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)  
+```
 
 Protocol Conclusion State:
 
@@ -435,9 +441,10 @@ from the DH and SIDH shared secrets.
 The two shared secrets are hashed together using Blake2b and then
 expanded using HKDF-Blake2b. However currently the HKDF expansion
 output is feed into an algorithm for selecting an element of the
-cyclic group, a function called ``GenerateInGroup``. The "baseKey" is an element of the cyclic group but
-this isn't currently a requirement and we have plans to change this in
-the future so that basekey will be a 32 byte value instead.
+cyclic group, a function called ``GenerateInGroup``. The "baseKey" is
+an element of the cyclic group but this isn't currently a requirement
+and we have plans to change this in the future so that basekey will be
+a 32 byte value instead.
 
 ### Per Message Key Derivation and per Message Encryption/Decryption
 
