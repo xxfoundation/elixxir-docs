@@ -268,10 +268,10 @@ Protocol steps:
 		* alice_payload
 
 ```
-	symmetric_key = DH(alice_ephemeral_dh_private_key, bob_longterm_dh_public_key)  
-	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)  
+	symmetric_key = DH(alice_ephemeral_dh_private_key, bob_longterm_dh_public_key)
+	alice_ownership_proof = ownership_proof(alice_longterm_dh_private_key, bob_longterm_dh_public_key)
 	alice_auth_request = alice_ephemeral_dh_public_key |
-	   Encrypt(symmetric_key, alice_ephemeral_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)  
+	   Encrypt(symmetric_key, alice_ephemeral_sidh_public_key | alice_payload | alice_ownership_proof | alice_network_id)
 ```
 
 2. Bob receives alice_auth_request, decrypts it, generates some short term keys
@@ -279,26 +279,29 @@ Protocol steps:
 
 ```
 	alice_ephemeral_sidh_public_key, alice_payload, alice_ownership_proof, alice_network_id
-	   = Decrypt(DH(bob_longterm_dh_private_key, alice_ephemeral_dh_public_key), alice_auth_request)  
+	   = Decrypt(DH(bob_longterm_dh_private_key, alice_ephemeral_dh_public_key), alice_auth_request)
 ```
 
-	Keys generated:
-	* short-term DH key pair:
-		* bob_ephemeral_dh_private_key
-		* bob_ephemeral_dh_public_key
-	* short-term SIDH key pair:
-		* bob_ephemeral_sidh_private_key
-		* bob_ephemeral_sidh_public_key
+Keys generated:
 
-	symmetric_key = DH(bob_ephemeral_dh_private_key, alice_longterm_dh_public_key)  
-	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)  
-	bob_auth_response = bob_ephemeral_dh_public_key | Encrypt(symmetric_key, bob_ephemeral_sidh_public_key | bob_ownership_proof | bob_network_id)  
+* short-term DH key pair:
+  * bob_ephemeral_dh_private_key
+  * bob_ephemeral_dh_public_key
+* short-term SIDH key pair:
+  * bob_ephemeral_sidh_private_key
+  * bob_ephemeral_sidh_public_key
+
+```
+	symmetric_key = DH(bob_ephemeral_dh_private_key, alice_longterm_dh_public_key)
+	bob_ownership_proof = ownership_proof(bob_longterm_dh_private_key, alice_longterm_dh_public_key)
+	bob_auth_response = bob_ephemeral_dh_public_key | Encrypt(symmetric_key, bob_ephemeral_sidh_public_key | bob_ownership_proof | bob_network_id)
+```
 
 3. Alice receives bob_auth_response and decrypts it:
 
 ```
-	symmetric_key = DH(alice_longterm_dh_private_key, bob_ephemeral_dh_public_key)  
-	bob_ephemeral_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)  
+	symmetric_key = DH(alice_longterm_dh_private_key, bob_ephemeral_dh_public_key)
+	bob_ephemeral_sidh_public_key, bob_ownership_proof, bob_network_id = Decrypt(symmetric_key, bob_auth_response)
 ```
 
 Protocol Conclusion State:
