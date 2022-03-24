@@ -172,20 +172,24 @@ term identity keys or network IDs. If it did leak such data then there
 would be no point in using a mix network to hide the identities of the
 communicating parties.
 
-### Cryptographic Function Glossary
+### Pseudo Code Cryptographic Function Glossary
+
+The following sections are populated with pseudo code examples which
+are used to explain sections of our cryptographic protocols. It is
+hoped that this glossary will help you understand the pseudo code.
 
 * |: byte concatenation
 
 * H(x): H is a cryptographic hash function.
 
-* DH(my_private_key, partner_public_key):
+* DH(my_private_key, partner_public_key):  
   Diffiehellman function used to calculate a shared secret.
 
-* ownership_proof(my_private_key, partner_public_key):
+* ownership_proof(my_private_key, partner_public_key):  
   The ownership proof is simply the hash of a Diffiehellman shared secret
-  and the ownership proof vector, defined as:
+  and the ownership proof vector, defined as:  
 
-  H(DH(my_private_key, partner_public_key) | "ownershipVector")
+  H(DH(my_private_key, partner_public_key) | "ownershipVector")  
 
   Which is to say that "ownershipVector" vector is also hashed along
   with the Diffiehellman output.
@@ -194,13 +198,13 @@ communicating parties.
 
 * D(key, payload): Stream-cipher decrypt payload.
 
-* Encrypt(key, payload): Encrypt and then MAC:
-  MAC(key, E(key, payload))
+* Encrypt(key, payload): Encrypt and then MAC:  
+  MAC(key, E(key, payload))  
 
-* Decrypt(key, payload): MAC then Decrypt:
-  if MAC(key, payload) { // If MAC is valid...
-	  D(key, payload)
-  }
+* Decrypt(key, payload): MAC then Decrypt:  
+  if MAC(key, payload) { // If MAC is valid...  
+	  D(key, payload)  
+  }  
 
 ### High level Auth protocol description
 
@@ -426,12 +430,14 @@ keys and their SIDH public keys. Each session derives what is known
 in our code base as a "baseKey" which is deterministically derived
 from the DH and SIDH shared secrets.
 
+	basekey := GenerateInGroup(HKDF(H(DH_shared_secret | SIDH_shared_secret)))
+
 The two shared secrets are hashed together using Blake2b and then
 expanded using HKDF-Blake2b. However currently the HKDF expansion
-output is feed into an algorithm for selecting cyclic group
-curves. The "baseKey" is an element of the cyclic group but this isn't
-currently a requirement and we have plans to change this in the
-future.
+output is feed into an algorithm for selecting an element of the
+cyclic group, a function called ``GenerateInGroup``. The "baseKey" is an element of the cyclic group but
+this isn't currently a requirement and we have plans to change this in
+the future so that basekey will be a 32 byte value instead.
 
 ### Per Message Key Derivation and per Message Encryption/Decryption
 
@@ -502,3 +508,21 @@ the relationship fingerprint to derive the per message fingerprint:
    message fingerprints to tag messages and avoid trial decryption.
 2. Minimize ratchet rekeying because these rekeying operations leak
    metadata since they require almost an entire cMix packet payload.
+
+### Message Encryption and Decryption
+
+As noted in our glossary entries the encrypt/decrypt
+makes use of a stream cipher and MAC:
+
+* Encrypt(key, payload): Encrypt and then MAC:  
+  MAC(key, E(key, payload))  
+
+* Decrypt(key, payload): MAC then Decrypt:  
+  if MAC(key, payload) { // If MAC is valid...  
+	  D(key, payload)  
+  }  
+
+In the future we'd like to replace this with an AEAD. The Encrypt
+also sets the message fingerprint field of the cMix message. Please
+see our [cMix design document](cmix.md) for more detailed information
+about the cMix message format.
