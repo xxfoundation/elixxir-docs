@@ -536,3 +536,29 @@ In the future we'd like to replace this with an AEAD. The Encrypt
 also sets the message fingerprint field of the cMix message. Please
 see our [cMix design document](cmix.md) for more detailed information
 about the cMix message format.
+
+
+### Session Rekeying
+
+#### Introduction
+
+Clients MUST periodically rekey. In the xx network protocol parlance
+rekeying means to create a new session created with a new basekey. Two
+new ephemeral session keypairs are computed; a new ephemeral DH
+keypair and a new SIDH ephemeral keypair. The public keys of these
+keypairs are sent to the other party and a new shared secrets are
+computed and used in the creation of a new basekey.
+
+Although a new session is created, the old session will still be used
+until the keys are exhausted.
+
+#### Scheduling
+
+Clients select a random rekey threshold which is the number of
+messages sent in a given session before sending a rekey.
+
+#### Rekey Finite State Machine
+
+#### Edge cases
+
+#### Privacy Considerations
