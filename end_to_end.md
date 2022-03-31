@@ -561,6 +561,25 @@ messages sent in a given session before sending a rekey.
 
 ![Rekey FSM](images/rekey_fsm.png)
 
+Rekey finite state machine states:
+* Unconfirmed: Sessions start their life in the unconfirmed state.
+* Sending: Sending means that the rekey is being sent.
+* Sent: Sent means that the rekey was sent.
+* Confirmed: Confirmed means that rekey that was sent received a reply.
+* NewSessionTriggered: New rekeying session being created.
+* NewSessionCreated: Each rekey session ends with this NewSessionCreated state
+  which means that the new rekey session was created.
+
 #### Edge cases
 
+There are many edge cases. One of them is: If a rekey that was Sent is
+never Confirmed then a rekey will again be sent in the futureat some
+random interval.
+
 #### Privacy Considerations
+
+Rekeys are sent sparringly because they take up the majority of the
+cMix payload capacity. Rekey messages cause metadata to be leaked
+because the receiving client always responds in a timely
+manner. Whereas in the future we should have rekey responses sent
+after some random time delay.
