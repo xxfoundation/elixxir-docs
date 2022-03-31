@@ -17,7 +17,7 @@ messenger could use the mix network transport protocol.
 ## Abstract
 
 Here we describe the Elixxir mix network end to end transportation
-which is an kind of amalgam of protocols.
+which is an amalgam of protocols.
 
 ## Introduction
 
@@ -538,9 +538,9 @@ see our [cMix design document](cmix.md) for more detailed information
 about the cMix message format.
 
 
-### Session Rekeying
+### End to End Cryptographic Session
 
-#### Introduction
+#### Introduction to Rekeying
 
 Clients MUST periodically rekey. In the xx network protocol parlance
 rekeying means to create a new session created with a new basekey. Two
@@ -558,6 +558,8 @@ Clients select a random rekey threshold which is the number of
 messages sent in a given session before sending a rekey.
 
 #### Rekey Finite State Machine
+
+![Rekey FSM](images/rekey_fsm.png)
 
 #### Edge cases
 
