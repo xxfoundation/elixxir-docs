@@ -581,7 +581,7 @@ basekey := GenerateInGroup(HKDF(H(DH_shared_secret | SIDH_shared_secret)))
 Clients select a random rekey threshold which is the number of
 messages sent in a given session before sending a rekey.
 
-![Alternating key exchange shared secret ladder diagram](shared_secret_ladder.png)
+![Alternating key exchange shared secret ladder diagram](images/shared_secret_ladder.png)
 
 In the above diagram, Alice is first to establish a rekey (A2B1) after
 their initial key exchange (A1B1). A little while later Bob's rekey (A2B2) happens.
