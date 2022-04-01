@@ -552,6 +552,30 @@ computed and used in the creation of a new basekey.
 Although a new session is created, the old session will still be used
 until the keys are exhausted.
 
+Here are our protobuf definitions for RekeyTrigger and RekeyConfirm messages:
+
+```
+message RekeyTrigger {
+    // PublicKey used in the rekey
+    bytes publicKey = 1;
+    // SIDHPublicKey used in the rekey
+    bytes sidhPublicKey = 2;
+    // ID of the session used to create this session
+    bytes sessionID = 3;
+}
+
+message RekeyConfirm {
+    // ID of the session created
+    bytes sessionID = 1;
+}
+```
+
+Each party computes a basekey for the new session:
+
+```
+basekey := GenerateInGroup(HKDF(H(DH_shared_secret | SIDH_shared_secret)))
+```
+
 #### Scheduling
 
 Clients select a random rekey threshold which is the number of
