@@ -557,6 +557,11 @@ until the keys are exhausted.
 Clients select a random rekey threshold which is the number of
 messages sent in a given session before sending a rekey.
 
+![Alternating key exchange shared secret ladder diagram](shared_secret_ladder.png)
+
+In the above diagram, Alice is first to establish a rekey (A2B1) after
+their initial key exchange (A1B1). A little while later Bob's rekey (A2B2) happens.
+
 #### Rekey Finite State Machine
 
 ![Rekey FSM](images/rekey_fsm.png)
@@ -573,8 +578,8 @@ Rekey finite state machine states:
 #### Edge cases
 
 There are many edge cases. One of them is: If a rekey that was Sent is
-never Confirmed then a rekey will again be sent in the futureat some
-random interval.
+never Confirmed then a rekey will again be sent in the future at some
+randomly selected time.
 
 #### Privacy Considerations
 
