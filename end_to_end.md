@@ -471,9 +471,9 @@ like this in pseuodo code:
 	func MakeRelationshipFingerprint(pubkeyA, pubkeyB *cyclic.Int, sender,
 		receiver *id.ID) []byte {
 		if pubKeyA > pubKeyB {
-			return H(pubKeyA | pubKeyB | senderID | receiverID)
+			return H(pubKeyA | pubKeyB | sender | receiver)
 		} elsif pubkeyA < pubKeyB {
-			return H(pubKeyB | pubKeyA | senderID | receiverID)
+			return H(pubKeyB | pubKeyA | sender | receiver)
 		} else {
 			// error if keys are equal
 		}
@@ -578,13 +578,37 @@ basekey := GenerateInGroup(HKDF(H(DH_shared_secret | SIDH_shared_secret)))
 
 #### Scheduling
 
-Clients select a random rekey threshold which is the number of
-messages sent in a given session before sending a rekey.
+At the bottom of the following diagram, Alice and Bob each start out
+using the same shared secret A1B1. For Alice this A1B1 shared secret
+is computed like so:
+
+```
+basekey := GenerateInGroup(HKDF(H(DH(A1private, B1public) | SIDH(A1qprivate, B1qpublic))))
+```
+
+Whereas Bob would compute it like so:
+
+```
+basekey := GenerateInGroup(HKDF(H(DH(B1private, A1public) | SIDH(B1qprivate, A1qpublic))))
+```
 
 ![Alternating key exchange shared secret ladder diagram](images/shared_secret_ladder.png)
 
-In the above diagram, Alice is first to establish a rekey (A2B1) after
-their initial key exchange (A1B1). A little while later Bob's rekey (A2B2) happens.
+Between A1B1 and A2B1 there have been many messages sent by
+Alice. Alice hits her rekey threshold first so she sends a rekey
+messages to Bob, receives the rekey reply and then starts using a new
+shared secret marked in the diagram as A2B1. This labelling in the
+diagram means that Alice has generated a new session keypair known as
+A2 and she used it to compute a new session shared secret using Bob's
+B1 public key.
+
+Alice and Bob will each initiate rekeying at different times because
+they will each select random thresholds for their sessions and will
+likely consume the session keys at differing rates. A little while
+later Bob's rekey (A2B2) happens. Alice and Bob will each send
+messages until they hit the randomly select threshold for that session and then
+they will attempt a rekey using their communication partner's latest
+public key.
 
 #### Rekey Finite State Machine
 
