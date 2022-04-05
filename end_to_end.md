@@ -623,7 +623,8 @@ Rekey finite state machine states:
 * NewSessionCreated: Each rekey session ends with this NewSessionCreated state
   which means that the new rekey session was created.
 
-Note that only three states are saved to disk upon state transition:
+Note that only three states are saved to disk upon state transition, thus
+acting as transaction checkpoints:
 
 * Unconfirmed
 * Confirmed
