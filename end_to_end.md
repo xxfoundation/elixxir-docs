@@ -635,6 +635,23 @@ then upon restart the client would continue from the Confirmed
 state. Likewise if crashed in the Sending or Sent state, the client
 would start in the Unconfirmed state.
 
+Likewise, all the state changes occuring between the checkpoints
+are idempotent or result in benign state changes. If for example
+Alice's rekey state transitions into the NetSessionTriggered state
+and Alice manages to send a rekey message to Bob before crashing.
+Bob receives the rekey. If Bob's current session hits it's threshold
+then Bob will use the new key he just got from Alice. Alice's client
+recently crash and upon restart it will not attempt to use the new
+session key it just sent to Bob because the rekey state that's loaded
+from disk will be in the Confirmed state.
+
+Alice will again send a new rekey message to Bob when she transitions
+into the NewSessionTriggered. However when Alice receives messages
+from Bob she must decrypt them using the session key she generated
+before her client crashed. Alice has this old session key saved to
+disk. Writing keys to disk is done separately from the rekey
+state. Alice can delete this old key only after Bob stops using it.
+
 #### Edge cases
 
 There are many edge cases. One of them is: If a rekey that was Sent is
