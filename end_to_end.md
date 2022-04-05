@@ -623,6 +623,17 @@ Rekey finite state machine states:
 * NewSessionCreated: Each rekey session ends with this NewSessionCreated state
   which means that the new rekey session was created.
 
+Note that only three states are saved to disk upon state transition:
+
+* Unconfirmed
+* Confirmed
+* NewSessionCreated
+
+Therefore if the client crashes when in state NewSessionTriggered,
+then upon restart the client would continue from the Confirmed
+state. Likewise if crashed in the Sending or Sent state, the client
+would start in the Unconfirmed state.
+
 #### Edge cases
 
 There are many edge cases. One of them is: If a rekey that was Sent is
