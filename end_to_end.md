@@ -537,6 +537,32 @@ also sets the message fingerprint field of the cMix message. Please
 see our [cMix design document](cmix.md) for more detailed information
 about the cMix message format.
 
+### Avoiding Trial Decryption
+
+The cryptographic primitives we are using for encryption/decryption
+are computationally intensive and slow. Therefore it's important that
+our designs avoid trial decryption.
+
+#### Match by message fingerprint
+
+As mentioned in the previous section "Message Tagging and
+Identification", clients keep track of their fingerprints to key
+mappings so that they can later match keys for decryption of received
+messages.
+
+#### Match by service fingerprint
+
+If a client receives a message that does not match any of the message key fingerprints
+then it will try to match using the service fingerprint. This pseudo code assumes
+Indentifier and Tag are set appropriately for one of the mixnet services:
+
+```
+func ForMe(contents, hash []byte) bool {
+	preimage = H(Identifier | Tag)
+	h = H(preimage | contents)
+	return h == hash
+}
+```
 
 ### End to End Cryptographic Session
 
