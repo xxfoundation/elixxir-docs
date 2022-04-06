@@ -550,17 +550,19 @@ Identification", clients keep track of their fingerprints to key
 mappings so that they can later match keys for decryption of received
 messages.
 
-#### Match by service fingerprint
+#### Match by Trial Hashing Service Identities
 
-If a client receives a message that does not match any of the message key fingerprints
-then it will try to match using the service fingerprint. This pseudo code assumes
-Indentifier and Tag are set appropriately for one of the mixnet services:
+Due to the extra overhead of trial hashing, services are processed
+after fingerprints. If a fingerprint match occurs on the message,
+services will not be handled.
+
+Service Identification Hash are predefined hash based tags appended
+to all cMix messages which, through trial hashing, are used to
+determine if a message applies to this client.
 
 ```
-func ForMe(contents, hash []byte) bool {
-	preimage = H(Identifier | Tag)
-	h = H(preimage | contents)
-	return h == hash
+func ForMe(contents, hash []byte, s Service) bool {
+	return H(H(s.Identifier | s.Tag) | contents) == hash
 }
 ```
 
