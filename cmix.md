@@ -143,10 +143,63 @@ random in order to thwart that attack
 
 ## Protocol Phases
 
-**FIXME:** do we need to include any details about our implementation of these various protocol phases?
+**TODO:**
+* do we need to include any details about our implementation of these various protocol phases?
+* How is our implementation different from the cMix paper?
+* Talk about the GPU optimization?
 
-- How is our implementation different from the cMix paper?
-- Talk about the GPU optimization?
+### Preparation Phase
+
+Before sending a cMix message, the client needs to participate in a
+preparatory protocol phase by sending key requests and processing
+responses. This protocol interaction between the client and the
+Gateway is done so using the xx network's wire protocol, also known as
+gRPC/TLS/IP. These are the protobuf definitions of the messages
+exchanged for the purpose of the cMix client gathering keys from the
+mix cascade's gateway:
+
+```
+message ClientKeyRequest {
+    // Salt used to generate the Client ID
+    bytes Salt = 1;
+    // NOTE: The following entry becomes a pointer to the blockchain that denotes
+    // where to find the users public key. The node can then read the blockchain
+    // and verify that the registration was done properly there.
+    SignedRegistrationConfirmation ClientTransmissionConfirmation = 2;
+    // the timestamp of this request,
+    int64 RequestTimestamp = 3;
+    // timestamp of registration, tied to ClientRegistrationConfirmation
+    int64 RegistrationTimestamp = 4;
+    // The public key of the client for the purposes of creating the diffie helman sesskey
+    bytes ClientDHPubKey = 5;
+}
+
+message SignedClientKeyRequest {
+    // Wire serialized format of the ClientKeyRequest Object (above)
+    bytes ClientKeyRequest = 1;
+    // RSA signature signed by the client
+    messages.RSASignature ClientKeyRequestSignature = 2;
+    // Target Gateway/Node - used to proxy through an alternate gateway
+    bytes Target = 3;
+}
+
+message ClientKeyResponse {
+    bytes EncryptedClientKey = 1;
+    bytes EncryptedClientKeyHMAC = 2;
+    bytes NodeDHPubKey = 3;
+    bytes KeyID = 4; // Currently unused and empty.
+    uint64 ValidUntil = 5; // Timestamp of when the key expires
+}
+
+message SignedKeyResponse {
+    bytes KeyResponse = 1;
+    messages.RSASignature KeyResponseSignedByGateway = 2;
+    bytes ClientGatewayKey = 3; // Stripped off by node gateway
+    string Error = 4;
+}
+```
+
+### Real-time phase
 
 ## Message Identification
 
