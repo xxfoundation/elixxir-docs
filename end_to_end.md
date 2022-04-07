@@ -492,32 +492,10 @@ as described above. The Encrypt function also sets the cMix message
 fingerprint and payload MAC. Whereas the Decrypt function verifies
 the payload ciphertext MAC before decrypting.
 
-### Message Tagging and Identification
-
-Each cMix message is tagged with a message fingerprint which is
-used to avoid any trial decryption. The recipient client will be
-able to look up a key based on it's mapped association with a
-given message fingerprint.
-
-Per message fingerprints are derived from three inputs:
-
-1. session basekey
-2. key ID
-3. relationship fingerprint
-
-The second half of the basekey is hashed along with the key ID and
-the relationship fingerprint to derive the per message fingerprint:
-
-	data := basekey
-	data = data[len(data)/2:]
-	message_fingerprint := H(data | key_id | relationship_fingerprint...)
-
 ### Privacy Design Considerations
 
-1. Don't leak identities to non-recipients. Using deterministic
-   message fingerprints to tag messages and avoid trial decryption.
-2. Minimize ratchet rekeying because these rekeying operations leak
-   metadata since they require almost an entire cMix packet payload.
+* Minimize ratchet rekeying because these rekeying operations leak
+  metadata since they require almost an entire cMix packet payload.
 
 ### Message Encryption and Decryption
 
@@ -537,34 +515,6 @@ also sets the message fingerprint field of the cMix message. Please
 see our [cMix design document](cmix.md) for more detailed information
 about the cMix message format.
 
-### Avoiding Trial Decryption
-
-The cryptographic primitives we are using for encryption/decryption
-are computationally intensive and slow. Therefore it's important that
-our designs avoid trial decryption.
-
-#### Match by message fingerprint
-
-As mentioned in the previous section "Message Tagging and
-Identification", clients keep track of their fingerprints to key
-mappings so that they can later match keys for decryption of received
-messages.
-
-#### Match by Trial Hashing Service Identities
-
-Due to the extra overhead of trial hashing, services are processed
-after fingerprints. If a fingerprint match occurs on the message,
-services will not be handled.
-
-Service Identification Hash are predefined hash based tags appended
-to all cMix messages which, through trial hashing, are used to
-determine if a message applies to this client.
-
-```
-func ForMe(contents, hash []byte, s Service) bool {
-	return H(H(s.Identifier | s.Tag) | contents) == hash
-}
-```
 
 ### End to End Cryptographic Session
 

@@ -148,9 +148,62 @@ random in order to thwart that attack
 - How is our implementation different from the cMix paper?
 - Talk about the GPU optimization?
 
+## Message Identification
+
+The cryptographic primitives we are using for encryption/decryption in our
+[end to end mixnet protocol](end_to_end.md)
+are computationally intensive and slow. Therefore it's important that
+our designs avoid trial decryption. Each cMix message has a message
+fingerprint field. The fingerprint field is used in one of two ways to
+find the proper decryption key.
+
+#### Match by Message Fingerprint
+
+Clients keep track of their fingerprints to key
+mappings so that they can later match keys for decryption of received
+messages.
+
+Clients store a mapping from fingerprints to keys so that later they can
+look up a key based on it's mapped association with a given message fingerprint.
+
+Per message fingerprints are derived from three inputs:
+
+1. session basekey
+2. key ID
+3. relationship fingerprint
+
+The second half of the basekey is hashed along with the key ID and
+the relationship fingerprint to derive the per message fingerprint:
+
+	data := basekey
+	data = data[len(data)/2:]
+	message_fingerprint := H(data | key_id | relationship_fingerprint...)
+
+If no fingerprint mapping was found then Trial Hashing Service Identities
+are checked for a match, described below.
+
+#### Match by Trial Hashing Service Identities
+
+Due to the extra overhead of trial hashing, services are processed
+after fingerprints. If a fingerprint match occurs on the message,
+services will not be handled.
+
+Service Identification Hash are predefined hash based tags appended
+to all cMix messages which, through trial hashing, are used to
+determine if a message applies to this client.
+
+```
+func ForMe(contents, hash []byte, s Service) bool {
+	return H(H(s.Identifier | s.Tag) | contents) == hash
+}
+```
+
 ## Security Considerations
 
 ## Anonymity Considerations
+
+* Don't leak identities to non-recipients. Using deterministic
+  message fingerprints to tag messages and avoid trial decryption.
 
 ## Citations
 
