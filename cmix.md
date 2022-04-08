@@ -13,8 +13,7 @@ communications network.
 
 **cMix** is a verified mix strategy which uses the cryptographic and
 partial homomorphic properties of the [ElGamal encryption protocol](),
-which is described at length in the [published cMix paper]() and
-in [an essay with a more verbose description]().
+which is described at length in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf).
 
 ## Ciphersuite
 
@@ -255,8 +254,12 @@ func ForMe(contents, hash []byte, s Service) bool {
 
 ## Anonymity Considerations
 
-* Don't leak identities to non-recipients. Using deterministic
-  message fingerprints to tag messages and avoid trial decryption.
+* The design of the Auth protocol avoids leaking identity keys on the
+  communications channel in plaintext.
+
+* The design of the message storage and retrieval deliberately avoids
+  leaking identities to non-recipients. Using deterministic message
+  fingerprints to tag messages and avoid trial decryption.
 
 ## Citations
 
