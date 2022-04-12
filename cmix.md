@@ -142,10 +142,22 @@ random in order to thwart that attack
 
 ## Protocol Phases
 
-**TODO:**
-* do we need to include any details about our implementation of these various protocol phases?
-* How is our implementation different from the cMix paper?
-* Talk about the GPU optimization?
+### Pseudo Code Cryptographic Function Glossary
+
+The following sections are populated with pseudo code examples which
+are used to explain sections of our cryptographic protocols. It is
+hoped that this glossary will help you understand the pseudo code.
+
+* |: byte concatenation
+
+* H(x): H is a cryptographic hash function.
+
+* DH(my_private_key, partner_public_key):  
+  Diffiehellman function used to calculate a shared secret.
+
+* E(key, payload): Stream-cipher encrypt payload.
+
+* D(key, payload): Stream-cipher decrypt payload.
 
 ### Preparation Phase
 
@@ -153,50 +165,74 @@ Before sending a cMix message, the client needs to participate in a
 preparatory protocol phase by sending key requests and processing
 responses. This protocol interaction between the client and the
 Gateway is done so using the xx network's wire protocol, also known as
-gRPC/TLS/IP. These are the protobuf definitions of the messages
-exchanged for the purpose of the cMix client gathering keys from the
-mix cascade's gateway:
+gRPC/TLS/IP.
+
+Each mix node is paired with one Gateway. The client is directly
+connected to a Gateway which can proxy the key requests to the correct
+Gateway. This Gateway in turn proxies the key request to the
+destination mix node. The mix node's reply takes the reverse of this
+route back to the client.
+
+The ClientKeyRequest message contains:
+
+* the transmission salt value
+* the transmission confirmation
+* client's DH pub key
+* registration timestamp
+* request timestamp
+
+The client's transmission RSA key is used to sign the hash of the serialization
+of the ClientKeyRequest message. Ultimately what the client ends up sending is
+a message type called SignedClientKeyRequest which encapsulates:
+
+* ClientKeyRequest
+* ClientKeyRequestSignature
+* target gateway ID
+
+The response message is of type SignedKeyResponse which encapsulates:
+
+* KeyResponse
+* KeyResponseSignedByGateway
+* ClientGatewayKey
+* Error
+
+However this message is proxied through the client's Gateway which
+puts the ClientGatewayKey into a database and then removes it from the
+message. Therefore the client only receives the KeyResponse and the
+signature.
+
+Here's what is done on the mix node side upon receiving the key request:
 
 ```
-message ClientKeyRequest {
-    // Salt used to generate the Client ID
-    bytes Salt = 1;
-    // NOTE: The following entry becomes a pointer to the blockchain that denotes
-    // where to find the users public key. The node can then read the blockchain
-    // and verify that the registration was done properly there.
-    SignedRegistrationConfirmation ClientTransmissionConfirmation = 2;
-    // the timestamp of this request,
-    int64 RequestTimestamp = 3;
-    // timestamp of registration, tied to ClientRegistrationConfirmation
-    int64 RegistrationTimestamp = 4;
-    // The public key of the client for the purposes of creating the diffie helman sesskey
-    bytes ClientDHPubKey = 5;
-}
-
-message SignedClientKeyRequest {
-    // Wire serialized format of the ClientKeyRequest Object (above)
-    bytes ClientKeyRequest = 1;
-    // RSA signature signed by the client
-    messages.RSASignature ClientKeyRequestSignature = 2;
-    // Target Gateway/Node - used to proxy through an alternate gateway
-    bytes Target = 3;
-}
-
-message ClientKeyResponse {
-    bytes EncryptedClientKey = 1;
-    bytes EncryptedClientKeyHMAC = 2;
-    bytes NodeDHPubKey = 3;
-    bytes KeyID = 4; // Currently unused and empty.
-    uint64 ValidUntil = 5; // Timestamp of when the key expires
-}
-
-message SignedKeyResponse {
-    bytes KeyResponse = 1;
-    messages.RSASignature KeyResponseSignedByGateway = 2;
-    bytes ClientGatewayKey = 3; // Stripped off by node gateway
-    string Error = 4;
-}
+encryption_key = DH(client_DH_pub_key, node_DH_priv_key)
+key = H(node_secret | client_ID)
+ciphertext = E(encryption_key, key) // encrypt key using encryption_key
+gateway_key = H(key)
 ```
+
+A simplified KeyResponse message contains these fields is sent to the gateway:
+
+* node_DH_pub_key
+* ciphertext
+* gateway_key
+
+And that gateway passed on the following fields to the client:
+
+* node_DH_pub_key
+* ciphertext
+
+The client is able to derive the encryption_key via a diffiehellman computation
+and then decrypt the key:
+
+```
+encryption_key = DH(client_DH_priv_key, node_DH_pub_key)
+key = D(encryption_key, ciphertext)
+```
+
+The client and gateways never learn the `node_secret` even though it's used
+to derive the `key` which the client does learn.
+
+
 
 ### Real-time phase
 
