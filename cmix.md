@@ -189,6 +189,17 @@ a message type called SignedClientKeyRequest which encapsulates:
 * ClientKeyRequestSignature
 * target gateway ID
 
+But for the purpose of demonstrating the mechanisms of our
+cryptographic protocol I'll simplify the message types in the pseudo
+code by omitting the fields containing timestamps. The client sends:
+
+```
+keyRequest := ClientKeyRequest{
+   	Salt:                           clientTransmissionSalt,
+   	ClientTransmissionConfirmation: clientTransmissionConfirmation,
+   	ClientDHPubKey:                 client_dh_pub_key,
+}
+```
 The response message is of type SignedKeyResponse which encapsulates:
 
 * KeyResponse
@@ -204,34 +215,44 @@ signature.
 Here's what is done on the mix node side upon receiving the key request:
 
 ```
-encryption_key = DH(client_DH_pub_key, node_DH_priv_key)
+encryption_key_dh(client_dh_pub_key, node_dh_priv_key)
 key = H(node_secret | client_ID)
-ciphertext = E(encryption_key, key) // encrypt key using encryption_key
+ciphertext = E(encryption_key, key)
 gateway_key = H(key)
 ```
 
 A simplified KeyResponse message contains these fields is sent to the gateway:
 
-* node_DH_pub_key
+* node_dh_pub_key
 * ciphertext
 * gateway_key
 
 And that gateway passed on the following fields to the client:
 
-* node_DH_pub_key
+* node_dh_pub_key
 * ciphertext
+
+Written in our pseudo code:
+
+```
+keyResponse := ClientKeyResponse{
+	EncryptedClientKey: ciphertext,
+	EncryptedClientKeyHMAC: ciphertext_mac,
+	NodeDHPubKey: node_dh_pub_key,
+	KeyID: abc123,
+}
+```
 
 The client is able to derive the encryption_key via a diffiehellman computation
 and then decrypt the key:
 
 ```
-encryption_key = DH(client_DH_priv_key, node_DH_pub_key)
-key = D(encryption_key, ciphertext)
+encryption_key_dh(client_dh_priv_key, keyResponse.NodeDHPubKey)
+key = D(encryption_key, keyResponse.EncryptedClientKey)
 ```
 
 The client and gateways never learn the `node_secret` even though it's used
 to derive the `key` which the client does learn.
-
 
 
 ### Real-time phase
