@@ -222,12 +222,24 @@ common practice when using RSA signatures.
 https://git.xx.network/elixxir/client/-/blob/release/network/node/register.go#L225
 
 
-The response message is of type SignedKeyResponse which encapsulates:
+The response message is of type SignedKeyResponse which encapsulates ClientKeyResponse:
 
-* KeyResponse
-* KeyResponseSignedByGateway
-* ClientGatewayKey
-* Error
+```
+message ClientKeyResponse {
+    bytes EncryptedClientKey = 1;
+    bytes EncryptedClientKeyHMAC = 2;
+    bytes NodeDHPubKey = 3;
+    bytes KeyID = 4; // Currently unused and empty.
+    uint64 ValidUntil = 5; // Timestamp of when the key expires
+}
+
+message SignedKeyResponse {
+    bytes KeyResponse = 1;
+    messages.RSASignature KeyResponseSignedByGateway = 2;
+    bytes ClientGatewayKey = 3; // Stripped off by node gateway
+    string Error = 4;
+}
+```
 
 However this message is proxied through the client's Gateway which
 puts the ClientGatewayKey into a database and then removes it from the
@@ -235,7 +247,8 @@ message. Therefore the client only receives the KeyResponse and the
 signature. As the field name implies, KeyResponseSignedByGateway
 contains a signature computed by the Gateway.
 
-Here's what is done on the mix node side upon receiving the key request:
+Aside from checking the signature here's what is done on the mix node
+side upon receiving the key request:
 
 ```
 encryption_key_dh(client_dh_pub_key, node_dh_priv_key)
