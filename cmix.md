@@ -159,6 +159,11 @@ hoped that this glossary will help you understand the pseudo code.
 
 * D(key, payload): Stream-cipher decrypt payload.
 
+* Sign(private_key, payload): Returns a cryptographic signature.
+
+* Verify(public_key, signature): Returns a boolean which will be
+  true if the signature is valid for the given public key.
+
 ### Preparation Phase
 
 Before sending a cMix message, the client needs to participate in a
@@ -171,35 +176,52 @@ Each mix node is paired with one Gateway. The client is directly
 connected to a Gateway which can proxy the key requests to the correct
 Gateway. This Gateway in turn proxies the key request to the
 destination mix node. The mix node's reply takes the reverse of this
-route back to the client.
+route back to the client. This is a strict request/response protocol
+with essentially only two message types as we shall soon see.
 
-The ClientKeyRequest message contains:
-
-* the transmission salt value
-* the transmission confirmation
-* client's DH pub key
-* registration timestamp
-* request timestamp
-
-The client's transmission RSA key is used to sign the hash of the serialization
-of the ClientKeyRequest message. Ultimately what the client ends up sending is
-a message type called SignedClientKeyRequest which encapsulates:
-
-* ClientKeyRequest
-* ClientKeyRequestSignature
-* target gateway ID
-
-But for the purpose of demonstrating the mechanisms of our
-cryptographic protocol I'll simplify the message types in the pseudo
-code by omitting the fields containing timestamps. The client sends:
+The client composes a ClientKeyRequest and then encapsulates it within
+a SignedClientKeyRequest along with a signature. Within the
+ClientKeyRequest itself there is a SignedRegistrationConfirmation
+which also must be verified by the recipient. Here are the protobuf
+definitions for ClientKeyRequest and SignedClientKeyRequest:
 
 ```
-keyRequest := ClientKeyRequest{
-   	Salt:                           clientTransmissionSalt,
-   	ClientTransmissionConfirmation: clientTransmissionConfirmation,
-   	ClientDHPubKey:                 client_dh_pub_key,
+message ClientKeyRequest {
+    // Salt used to generate the Client ID
+    bytes Salt = 1;
+    // NOTE: The following entry becomes a pointer to the blockchain that denotes
+    // where to find the users public key. The node can then read the blockchain
+    // and verify that the registration was done properly there.
+    SignedRegistrationConfirmation ClientTransmissionConfirmation = 2;
+    // the timestamp of this request,
+    int64 RequestTimestamp = 3;
+    // timestamp of registration, tied to ClientRegistrationConfirmation
+    int64 RegistrationTimestamp = 4;
+    // The public key of the client for the purposes of creating the diffie helman sesskey
+    bytes ClientDHPubKey = 5;
+}
+
+message SignedClientKeyRequest {
+    // Wire serialized format of the ClientKeyRequest Object (above)
+    bytes ClientKeyRequest = 1;
+    // RSA signature signed by the client
+    messages.RSASignature ClientKeyRequestSignature = 2;
+    // Target Gateway/Node - used to proxy through an alternate gateway
+    bytes Target = 3;
 }
 ```
+
+That ClientKeyRequestSignature is in fact not merely a signature of
+the serialized ClientKeyRequest because the signing algorithm is RSA
+therefore the output will be the same size as the input which in this
+case is the hash of the serialized ClientKeyRequest. The client's DH
+public key is cryptographically linked with this signature since it's
+encapsulating message is serialized, hashed and then signed. This is
+common practice when using RSA signatures.
+
+https://git.xx.network/elixxir/client/-/blob/release/network/node/register.go#L225
+
+
 The response message is of type SignedKeyResponse which encapsulates:
 
 * KeyResponse
@@ -210,7 +232,8 @@ The response message is of type SignedKeyResponse which encapsulates:
 However this message is proxied through the client's Gateway which
 puts the ClientGatewayKey into a database and then removes it from the
 message. Therefore the client only receives the KeyResponse and the
-signature.
+signature. As the field name implies, KeyResponseSignedByGateway
+contains a signature computed by the Gateway.
 
 Here's what is done on the mix node side upon receiving the key request:
 
