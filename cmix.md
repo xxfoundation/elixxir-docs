@@ -161,8 +161,9 @@ hoped that this glossary will help you understand the pseudo code.
 
 * Sign(private_key, payload): Returns a cryptographic signature.
 
-* Verify(public_key, signature): Returns a boolean which will be
-  true if the signature is valid for the given public key.
+* Verify(public_key, data, signature): Returns a boolean which will be
+  true if the `signature` is a signature of `data` and is valid for the
+  given public key.
 
 ### Preparation Phase
 
@@ -247,14 +248,30 @@ message. Therefore the client only receives the KeyResponse and the
 signature. As the field name implies, KeyResponseSignedByGateway
 contains a signature computed by the Gateway.
 
-Aside from checking the signature here's what is done on the mix node
-side upon receiving the key request:
+Here's the cryptographic operations done with the key request 
+after verifying that the sender is authenticated:
 
 ```
-encryption_key_dh(client_dh_pub_key, node_dh_priv_key)
-key = H(node_secret | client_ID)
-ciphertext = E(encryption_key, key)
-gateway_key = H(key)
+func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
+	if !Verify(registrationPubKey,
+	           H(timestamp | request.ClientKeyRequest.ClientTransmissionConfirmation.RSAPubKey),
+			            request.ClientKeyRequest.ClientTransmissionConfirmation.RegistrarSignature) {
+		return nil, SignatureVerificationFailure	
+	}
+	
+	if !Verify() {
+		return nil, SignatureVerificationFailure	
+	}
+
+	encryption_key := DH(request.ClientKeyRequest.ClientDHPubKey, node_dh_priv_key)
+	key := H(node_secret | client_ID)
+	ciphertext = E(encryption_key, key)
+	gateway_key = H(key)
+	
+	return &SignedKeyResponse{
+	
+	}, nil
+}
 ```
 
 A simplified KeyResponse message contains these fields is sent to the gateway:
