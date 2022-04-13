@@ -157,6 +157,8 @@ hoped that this glossary will help you understand the pseudo code.
 * DH(my_private_key, partner_public_key):  
   Diffiehellman function used to calculate a shared secret.
 
+* GenerateDHKeypair(): returns a DH keypair
+
 * E(key, payload): Stream-cipher encrypt payload.
 
 * D(key, payload): Stream-cipher decrypt payload.
@@ -291,38 +293,21 @@ func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
 }
 ```
 
-A simplified KeyResponse message contains these fields is sent to the gateway:
-
-* node_dh_pub_key
-* ciphertext
-* gateway_key
-
-And that gateway passed on the following fields to the client:
-
-* node_dh_pub_key
-* ciphertext
-
-Written in our pseudo code:
+The client checks the response signature and then derives the
+encryption_key via a Diffiehellman computation and then decrypts the
+key:
 
 ```
-keyResponse := ClientKeyResponse{
-	EncryptedClientKey: ciphertext,
-	EncryptedClientKeyHMAC: ciphertext_mac,
-	NodeDHPubKey: node_dh_pub_key,
-	KeyID: abc123,
+key = 
+data = 
+signature = 
+	
+if !Verify(key, data, signature) {
+	return SignatureVerificationFailure	
 }
-```
-
-The client is able to derive the encryption_key via a diffiehellman computation
-and then decrypt the key:
-
-```
-encryption_key_dh(client_dh_priv_key, keyResponse.NodeDHPubKey)
+encryption_key = DH(client_dh_priv_key, keyResponse.NodeDHPubKey)
 key = D(encryption_key, keyResponse.EncryptedClientKey)
 ```
-
-The client and gateways never learn the `node_secret` even though it's used
-to derive the `key` which the client does learn.
 
 
 ### Real-time phase
