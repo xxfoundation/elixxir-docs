@@ -152,6 +152,8 @@ hoped that this glossary will help you understand the pseudo code.
 
 * H(x): H is a cryptographic hash function.
 
+* HMAC(key, data): HMAC uses the given key to compute an HMAC over the given data.
+
 * DH(my_private_key, partner_public_key):  
   Diffiehellman function used to calculate a shared secret.
 
@@ -248,8 +250,9 @@ message. Therefore the client only receives the KeyResponse and the
 signature. As the field name implies, KeyResponseSignedByGateway
 contains a signature computed by the Gateway.
 
-Here's the cryptographic operations done with the key request 
-after verifying that the sender is authenticated:
+Here we use pseudo code to show the cryptographic operations done by
+the mix node after verifying that the sender is the authenticated
+Gateway for this mix node:
 
 ```
 func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
@@ -258,18 +261,32 @@ func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
 			            request.ClientKeyRequest.ClientTransmissionConfirmation.RegistrarSignature) {
 		return nil, SignatureVerificationFailure	
 	}
+
+	key = request.ClientKeyRequest.ClientTransmissionConfirmation.RSAPubKey
+	data = H(request.ClientKeyRequest)
+	signature = request.ClientKeyRequestSignature
 	
-	if !Verify() {
+	if !Verify(key, data, signature) {
 		return nil, SignatureVerificationFailure	
 	}
 
-	encryption_key := DH(request.ClientKeyRequest.ClientDHPubKey, node_dh_priv_key)
-	key := H(node_secret | client_ID)
-	ciphertext = E(encryption_key, key)
-	gateway_key = H(key)
-	
+	encryption_key = DH(request.ClientKeyRequest.ClientDHPubKey, node_dh_priv_key)
+
+	client_key := H(node_secret | client_ID)
+	ciphertext = E(encryption_key, client_key)
+	gateway_key = H(client_key)
+
+	dh_pub_key, dh_priv_key = GenerateDHKeypair()
+	session_key = DH(request.ClientKeyRequest.ClientDHPubKey, dh_priv_key)
+
+	encrypted_key_hmac = HMAC(session_key, encrypted_key)
+
 	return &SignedKeyResponse{
-	
+	ClientKeyResponse: ClientKeyResponse{
+			EncryptedClientKey:     encrypted_key,
+			EncryptedClientKeyHMAC: encrypted_key_hmac,
+			NodeDHPubKey:           dh_pub_key,
+		},
 	}, nil
 }
 ```
