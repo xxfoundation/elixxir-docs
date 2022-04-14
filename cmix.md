@@ -227,7 +227,8 @@ common practice when using RSA signatures.
 https://git.xx.network/elixxir/client/-/blob/release/network/node/register.go#L225
 
 
-The response message is of type SignedKeyResponse which encapsulates ClientKeyResponse:
+The response message is of type SignedKeyResponse which encapsulates
+ClientKeyResponse:
 
 ```
 message ClientKeyResponse {
@@ -274,9 +275,9 @@ func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
 
 	encryption_key = DH(request.ClientKeyRequest.ClientDHPubKey, node_dh_priv_key)
 
-	client_key := H(node_secret | client_ID)
+	client_key = H(node_secret | client_ID)
 	ciphertext = E(encryption_key, client_key)
-	gateway_key = H(client_key)
+	client_gateway_key = H(client_key)
 
 	dh_pub_key, dh_priv_key = GenerateDHKeypair()
 	session_key = DH(request.ClientKeyRequest.ClientDHPubKey, dh_priv_key)
@@ -284,12 +285,27 @@ func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
 	encrypted_key_hmac = HMAC(session_key, encrypted_key)
 
 	return &SignedKeyResponse{
-	ClientKeyResponse: ClientKeyResponse{
-			EncryptedClientKey:     encrypted_key,
-			EncryptedClientKeyHMAC: encrypted_key_hmac,
-			NodeDHPubKey:           dh_pub_key,
+	        ClientGatewayKey: client_gateway_key,
+			ClientKeyResponse: ClientKeyResponse{
+					EncryptedClientKey:     encrypted_key,
+					EncryptedClientKeyHMAC: encrypted_key_hmac,
+					NodeDHPubKey:           dh_pub_key,
 		},
 	}, nil
+}
+```
+
+The SignedKeyResponse is then proxied through the Gateway who signs
+the message and removes the ClientGatewayKey, roughly in pseudo code
+like this:
+
+```
+func gateway_proxy_response(response *SignedKeyResponse) *SignedKeyResponse {
+	insert_into_database(response.ClientGatewayKey)
+	return &SignedKeyResponse{
+		KeyResponseSignedByGateway: Sign(gateway_private_key, H(response.ClientKeyResponse)),
+		ClientKeyResponse: response.ClientKeyResponse,
+	}
 }
 ```
 
@@ -298,17 +314,20 @@ encryption_key via a Diffiehellman computation and then decrypts the
 key:
 
 ```
-key = 
-data = 
-signature = 
+func client_handle_response(response *SignedKeyResponse) {
+	key = gateway_pub_key
+	data = response.ClientKeyResponse
+	signature = response.KeyResponseSignedByGateway
 	
-if !Verify(key, data, signature) {
-	return SignatureVerificationFailure	
-}
-encryption_key = DH(client_dh_priv_key, keyResponse.NodeDHPubKey)
-key = D(encryption_key, keyResponse.EncryptedClientKey)
-```
+	if !Verify(key, data, signature) {
+		return SignatureVerificationFailure
+	}
+	encryption_key = DH(client_dh_priv_key, response.ClientKeyResponse.NodeDHPubKey)
+	key = D(encryption_key, response.ClientKeyResponse.EncryptedClientKey)
 
+	do_stuff_with_key(key)
+}
+```
 
 ### Real-time phase
 
