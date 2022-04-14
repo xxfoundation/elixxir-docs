@@ -184,6 +184,8 @@ destination mix node. The mix node's reply takes the reverse of this
 route back to the client. This is a strict request/response protocol
 with essentially only two message types as we shall soon see.
 
+![Client key request response protocol diagram](images/client_proxy_gw_node_request_key.png)
+
 The client composes a ClientKeyRequest and then encapsulates it within
 a SignedClientKeyRequest along with a signature. Within the
 ClientKeyRequest itself there is a SignedRegistrationConfirmation
