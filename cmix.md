@@ -258,7 +258,7 @@ the mix node after verifying that the sender is the authenticated
 Gateway for this mix node:
 
 ```
-func receive(request *SignedKeyRequest) (*SignedKeyResponse, error) {
+func node_handle_key_request(request *SignedKeyRequest) (*SignedKeyResponse, error) {
 	if !Verify(registrationPubKey,
 	           H(timestamp | request.ClientKeyRequest.ClientTransmissionConfirmation.RSAPubKey),
 			            request.ClientKeyRequest.ClientTransmissionConfirmation.RegistrarSignature) {
