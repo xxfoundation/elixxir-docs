@@ -331,7 +331,21 @@ func client_handle_response(response *SignedKeyResponse) {
 }
 ```
 
-### Real-time phase
+## Message Encryption
+
+For the given mix cascade which the client has selected to transport
+their message, the client must combine the set of mix keys by
+multiplying them together. The resulting key is then used to encrypt
+the cMix message payload.
+
+cMix message encryption is simply modular multiplication as described
+in the El Gamal paper where `p` is the modulus of the cyclic group:
+
+```
+func E(key, payload []byte) []byte {
+	return key * payload % p
+}
+```
 
 ## Message Identification
 
