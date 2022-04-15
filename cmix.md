@@ -12,7 +12,7 @@ communications network.
 ## Introduction
 
 **cMix** is a verified mix strategy which uses the cryptographic and
-partial homomorphic properties of the [ElGamal encryption protocol](),
+partial homomorphic properties of the [ElGamal encryption protocol](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/elgamal.pdf),
 which is described at length in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf).
 
 ## Ciphersuite
@@ -397,7 +397,9 @@ func ForMe(contents, hash []byte, s Service) bool {
 ## Citations
 
 - Taher El Gamal. A public key cryptosystem and a signature scheme based on
-  discrete logarithms. In Proceedings of CRYPTO 84 on Advances in cryptology,
+  discrete logarithms.
+  https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/elgamal.pdf
+  In Proceedings of CRYPTO 84 on Advances in cryptology,
   pages 10–18. Springer-Verlag New York, Inc., 1985.
 
 
