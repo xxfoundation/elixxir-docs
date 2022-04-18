@@ -360,11 +360,8 @@ func clientEncrypt(msg Message, salt []byte, roundID RoundID, baseKeys []Key) Me
 	EcrPayloadA := ElGamal_Encrypt(keyEcrA, msg.PayloadA)
 	EcrPayloadB := ElGamal_Encrypt(keyEcrB, msg.PayloadB)
 
-	primeLen := grp.GetP().ByteLen()
-
-	// Create the encrypted message
+	primeLen := p.Len()
 	encryptedMsg := NewMessage(primeLen)
-
 	encryptedMsg.SetPayloadA(EcrPayloadA.LeftpadBytes(uint64(primeLen)))
 	encryptedMsg.SetPayloadB(EcrPayloadB.LeftpadBytes(uint64(primeLen)))
 
