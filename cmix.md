@@ -342,10 +342,82 @@ cMix message encryption is simply modular multiplication as described
 in the El Gamal paper where `p` is the modulus of the cyclic group:
 
 ```
-func E(key, payload []byte) []byte {
+func ElGamal_Encrypt(key, payload []byte) []byte {
 	return key * payload % p
 }
 ```
+
+As previously mentioned, the cMix message has two payloads. Therefore the
+function to encrypt our client cMix payloads looks like this:
+
+```
+func clientEncrypt(msg Message, salt []byte, roundID RoundID, baseKeys []Key) Message {
+	salt2 := H(salt)
+
+	keyEcrA := ClientKeyGen(grp, salt, roundID, baseKeys)
+	keyEcrB := ClientKeyGen(grp, salt2, roundID, baseKeys)
+
+	EcrPayloadA := ElGamal_Encrypt(keyEcrA, msg.PayloadA)
+	EcrPayloadB := ElGamal_Encrypt(keyEcrB, msg.PayloadB)
+
+	primeLen := grp.GetP().ByteLen()
+
+	// Create the encrypted message
+	encryptedMsg := NewMessage(primeLen)
+
+	encryptedMsg.SetPayloadA(EcrPayloadA.LeftpadBytes(uint64(primeLen)))
+	encryptedMsg.SetPayloadB(EcrPayloadB.LeftpadBytes(uint64(primeLen)))
+
+	return encryptedMsg
+}
+```
+
+The keys to encrypt each payload are deterministically generated like this
+by iteratively hashing with Blake2b and then SHA256 each symmetric key along
+with the salt, cMix Round ID and the string "cmixClientNodeKeyGenerationSalt".
+The resulting 32 byte value is then feed into HKDF_SHA256, and expanded to
+the correct number of bytes for the prime order cyclic group.
+
+```
+func ClientKeyGen(salt []byte, roundID RoundID, symmetricKeys []*Key) *Key {
+	output := NewKey()
+	tmpKey := NewKey()
+
+	for _, symmetricKey := range symmetricKeys {
+		h := SHA256_Hash(
+		         Blake2b_Hash(
+				     symmetricKey | salt | roundID | "cmixClientNodeKeyGenerationSalt"))
+	    hashFunc := func() goHash.Hash { return sha256.New() }
+        keyGen := hkdf.Expand(hashFunc, h, nil)
+		pBytes := make([]byte, p.Len())
+	    tmpKey, err = csprng.GenerateInGroup(pBytes, len(p.Len()), keyGen)
+		if err != nil {
+			panic(err)
+		}
+
+		output = tmpKey * output % p
+	}
+
+	return Inverse(output)
+}
+```
+
+You may recall from the [ElGamal encryption protocol](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/elgamal.pdf)
+that the inverse of the encryption key is used to decrypt. And as
+mentioned previously, cMix makes use of the partial homomorphic
+properties of ElGamal to form the group computations. In particular,
+all the mix nodes in a given cascade perform their computations on
+the message to completely decrypt it.
+
+We prevent the mix nodes from having to invert the key by having the
+client encrypt with the inverted key. That way, when the mix nodes
+deterministically compute their keys, they perform the exact same
+steps as the client except that they ommit the final inversion
+step. The generated key is the inverse of the key used to encrypt and
+therefore can be used to decrypt.
+
+Likewise the `GenerateInGroup` is designed specifically for generating
+keys within a cyclic group for usage with ElGamal cryptosystems.
 
 ## Message Identification
 
