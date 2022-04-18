@@ -404,7 +404,7 @@ that the inverse of the encryption key is used to decrypt. And as
 mentioned previously, cMix makes use of the partial homomorphic
 properties of ElGamal to form the group computations. In particular,
 all the mix nodes in a given cascade perform their computations on
-the message to completely decrypt it.
+the message to decrypt it.
 
 We prevent the mix nodes from having to invert the key by having the
 client encrypt with the inverted key. That way, when the mix nodes
@@ -414,7 +414,10 @@ step. The generated key is the inverse of the key used to encrypt and
 therefore can be used to decrypt.
 
 Likewise the `GenerateInGroup` is designed specifically for generating
-keys within a cyclic group for usage with ElGamal cryptosystems.
+keys within a cyclic group for usage with ElGamal cryptosystems. You can
+see the gory details in the code, here:
+
+https://git.xx.network/xx_network/crypto/-/blob/release/csprng/source.go#L82-186
 
 ## Message Identification
 
