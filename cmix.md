@@ -419,6 +419,33 @@ see the gory details in the code, here:
 
 https://git.xx.network/xx_network/crypto/-/blob/release/csprng/source.go#L82-186
 
+## Real-time Mix Node Message Processing
+
+The mix cascade's Gateway sends a stream of these Slot
+structs for real-time processing to the mix cascade:
+
+```
+// Represents a single encrypted message in a batch
+message Slot {
+    // Index in batch this slot belongs in
+    uint32 Index = 1;
+
+    // Precomputation fields
+    bytes EncryptedPayloadAKeys = 2;
+    bytes EncryptedPayloadBKeys = 3;
+    bytes PartialPayloadACypherText = 4;
+    bytes PartialPayloadBCypherText = 5;
+    bytes PartialRoundPublicCypherKey = 6;
+
+    // Realtime/client fields
+    bytes SenderID = 7; // 256 bit Sender Id
+    bytes PayloadA = 8; // Len(Prime) bit length payload A (contains part of encrypted payload)
+    bytes PayloadB = 9; // Len(Prime) bit length payload B (contains part of encrypted payload, and associated data)
+    bytes Salt = 10; // Salt to identify message key
+    repeated bytes KMACs = 11; // Individual Key MAC for each node in network
+}
+```
+
 ## Message Identification
 
 The cryptographic primitives we are using for encryption/decryption in our
