@@ -499,8 +499,10 @@ And after traversing all the mix nodes in the cascade the message becomes:
 {M * R1 * R2 * R3} * {S1} * {S2} * {S3}
 ```
 
-From the precomputation phases the mixes already know the inverse of
-all the R and S values multiplied together:
+Here we use the curly brackets to denot a variable from the correct
+mix node message slot. From the precomputation phases the mixes
+already know the inverse of all the R and S values multiplied
+together:
 
 ```
 ({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1
@@ -511,6 +513,9 @@ This precomputed value is used to reveal the message, M:
 ```
 ({M * R1 * R2 * R3} * {S1} * {S2} * {S3}) * (({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1) = M
 ```
+
+This last message reveal computation is performed by the last mix in the mix cascade.
+
 
 ## Message Identification
 
