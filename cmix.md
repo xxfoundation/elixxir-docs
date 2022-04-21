@@ -421,29 +421,95 @@ https://git.xx.network/xx_network/crypto/-/blob/release/csprng/source.go#L82-186
 
 ## Real-time Mix Node Message Processing
 
-The mix cascade's Gateway sends a stream of these Slot
-structs for real-time processing to the mix cascade:
+This section describes the cMix mixing strategy. Many of the
+mathematical details are described in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf)
+and assume an understanding of cryptographic protocol composition
+using ElGamal.
+
+Each cMix message is composed of two payloads, PayloadA and PayloadB.
+The reason for this design choice is simple: In ElGamal, the message
+size is limited to the size of the cyclic group space. It turns out
+that our choice of 4096 bit cyclic group did not provide a big enough
+payload capacity for a few of our intended use cases. One of those use
+cases is the end to end ratchet described in our [end to end protocol](end_to_end.md)
+design document because it exchanges large SIDH keys.
+
+With respect to input messages versus output messages, the mixing
+protocol must provide bitwise unlinkability. However since we are
+designing a batch mix (instead of a continuous time mixing strategy)
+the messages must also be shuffled. Below we work an example for a
+single message traversing a mix cascade composed of three mix
+nodes. However this can in principle be scaled to N mix nodes per
+cascade. And likewise we attempt to simplify the explanation of the
+cMix real-time protocol phase by only considering a single message
+whereas our mix node implementation operates on 1000 messages per mix
+batch.
+
+### Phase 1 - Preprocessing
+
+Firstly, the cMix client makes use of the [xx network's wire protocol, gRPC/TLS/TCP/IP](wire.md),
+and sends the following to the Gateway:
 
 ```
-// Represents a single encrypted message in a batch
-message Slot {
-    // Index in batch this slot belongs in
-    uint32 Index = 1;
+M * K1 * K2 * K3, senderID, salt, KMAC1, KMAC2, KMAC3
+```
 
-    // Precomputation fields
-    bytes EncryptedPayloadAKeys = 2;
-    bytes EncryptedPayloadBKeys = 3;
-    bytes PartialPayloadACypherText = 4;
-    bytes PartialPayloadBCypherText = 5;
-    bytes PartialRoundPublicCypherKey = 6;
+The fist field is the message M encrypted with the three shared keys,
+K1, K2 and K3. And to be clear, the message M is the precise payload
+size that matches the size of the space covered by the prime order cyclic
+group. The ciphertext is computed using modular multiplication over
+the prime order cyclic group. Therefore the first field implies
+computing `M * K1 * K2 * K3 mod p` where p is the RFC 3526 specified
+4096 bit ModP cyclic group previously mentioned in the Ciphersuite
+section at the beginning of this document.
 
-    // Realtime/client fields
-    bytes SenderID = 7; // 256 bit Sender Id
-    bytes PayloadA = 8; // Len(Prime) bit length payload A (contains part of encrypted payload)
-    bytes PayloadB = 9; // Len(Prime) bit length payload B (contains part of encrypted payload, and associated data)
-    bytes Salt = 10; // Salt to identify message key
-    repeated bytes KMACs = 11; // Individual Key MAC for each node in network
-}
+The KMACs fields are used to ensure that the ciphertext was composed of the
+expected symmetric keys.
+
+Each hop through the mix cascade results in one of the K values being removed
+and an R value being multiplied in. For example the first hop removes the K1
+value from the message ciphertext and multiplies in the R1 value:
+
+
+```
+[M * K1 * K2 * K3] * [k1^-1 * R1] = M * K2 * K3 * R1, senderID, salt, KMAC2, KMAC3
+```
+
+Once all mixes process the message in this way, all the K values are
+removed from the message and the R values are multiplied in.
+Additionally the SenderID, Salt, KMACs are stripped off the message
+resulting in the following message ciphertext:
+
+```
+M * R1 * R2 * R3
+```
+
+### Phase 2 - Mixing
+
+Every mix node reorders all messages in the batch and multiplies in blinding factor S.
+For example the output of the first mix node includes the `S1` factor:
+
+```
+permute{M * R1 * R2 * R3} * S1
+```
+
+And after traversing all the mix nodes in the cascade the message becomes:
+
+```
+{M * R1 * R2 * R3} * {S1} * {S2} * {S3}
+```
+
+From the precomputation phases the mixes already know the inverse of
+all the R and S values multiplied together:
+
+```
+({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1
+```
+
+This precomputed value is used to reveal the message, M:
+
+```
+({M * R1 * R2 * R3} * {S1} * {S2} * {S3}) * (({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1) = M
 ```
 
 ## Message Identification
