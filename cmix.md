@@ -426,24 +426,34 @@ mathematical details are described in the [published cMix paper](https://eprint.
 and assume an understanding of cryptographic protocol composition
 using ElGamal.
 
+Keep in mind that a batch mix strategy at minimum has two basic goals each time
+it mixes a batch of messages:
+
+1. Bitwise message unlinkability: In this case it means message
+encryption such that the input is transformed so that the output
+message is different. The two cannot be linked by their patterns of
+bits.
+
+2. The output message slots are shuffle in relation to the input
+message slots. Batches of messages are fixed size. The mix network
+must shuffle the batch of messages so that a given input message slot
+is not linked with a specific output slot. Below our notation denotes
+a shuffle with the `permute` function.
+
 Each cMix message is composed of two payloads, PayloadA and PayloadB.
 The reason for this design choice is simple: In ElGamal, the message
 size is limited to the size of the cyclic group space. It turns out
 that our choice of 4096 bit cyclic group did not provide a big enough
 payload capacity for a few of our intended use cases. One of those use
-cases is the end to end ratchet described in our [end to end protocol](end_to_end.md)
+cases is the end to end ratchet encryption protocol described in our [end to end protocol](end_to_end.md)
 design document because it exchanges large SIDH keys.
 
-With respect to input messages versus output messages, the mixing
-protocol must provide bitwise unlinkability. However since we are
-designing a batch mix (instead of a continuous time mixing strategy)
-the messages must also be shuffled. Below we work an example for a
-single message traversing a mix cascade composed of three mix
-nodes. However this can in principle be scaled to N mix nodes per
-cascade. And likewise we attempt to simplify the explanation of the
-cMix real-time protocol phase by only considering a single message
-whereas our mix node implementation operates on 1000 messages per mix
-batch.
+Below we work an example for a single message traversing a mix cascade
+composed of three mix nodes. However this can in principle be scaled
+to N mix nodes per cascade. And likewise we attempt to simplify the
+explanation of the cMix real-time protocol phase by only considering a
+single message whereas our mix node implementation operates on 1000
+messages per mix batch.
 
 ### Phase 1 - Preprocessing and Re-Encryption
 
@@ -458,33 +468,15 @@ The fist field is the message M encrypted with the three shared keys,
 K1, K2 and K3. The message M is the precise payload size that matches
 the size of the space covered by the prime order cyclic group. The
 ciphertext is computed using modular multiplication over the prime
-order cyclic group. Therefore the first field implies computing `M *
-K1 * K2 * K3 mod p` where p is the RFC 3526 specified 4096 bit ModP
+order cyclic group. Therefore the first field implies computing:
+`M * K1 * K2 * K3 mod p` where p is the RFC 3526 specified 4096 bit ModP
 cyclic group previously mentioned in the Ciphersuite section at the
 beginning of this document.
 
-The KMACs fields are used to ensure that the ciphertext was composed of the
-expected symmetric keys.
-
-Each hop through the mix cascade results in one of the K values being removed
-and an R value being multiplied in. For example the first hop removes the K1
-value from the message ciphertext and multiplies in the R1 value:
-
-
-**Glossary**
-
-* M: The message sent by the client, traversing the mix network.
-
-* K1, K2, K3: Shared symmetric keys known by the client and the respective mix node.
-
-* R1, R2, R3: Random values introduced by each mix node used to give us the bitwise unlinkability property.
-
-* S1, S2, S3: Random values introduced by each mix node used to give us the bitwise unlinkability property.
-
-* permute: A function which permutes a list. We use the Fisher Yates Shuffle algorithm.
-
-* KMAC1, KMAC
-
+The KMACs fields are used to ensure that the ciphertext was composed
+of the expected symmetric keys. Each hop through the mix cascade
+results in one of the K values being removed and an R value being
+multiplied in.
 
 If we describe all the transformations in this phase it would look like this for three hops:
 
