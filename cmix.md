@@ -477,28 +477,48 @@ value from the message ciphertext and multiplies in the R1 value:
 
 * K1, K2, K3: Shared symmetric keys known by the client and the respective mix node.
 
-* R1, R2, R3: Random values introduced by each mix node.
+* R1, R2, R3: Random values introduced by each mix node used to give us the bitwise unlinkability property.
 
-* S1, S2, S3: Random values introduced by each mix node.
+* S1, S2, S3: Random values introduced by each mix node used to give us the bitwise unlinkability property.
 
 * permute: A function which permutes a list. We use the Fisher Yates Shuffle algorithm.
 
+* KMAC1, KMAC
 
-```
-[M * K1 * K2 * K3] * [k1^-1 * R1] = M * K2 * K3 * R1, senderID, salt, KMAC2, KMAC3
-```
 
 If we describe all the transformations in this phase it would look like this for three hops:
 
 ```
 // hop 1
-[M * K1 * K2 * K3] * [k1^-1 * R1] = M * K2 * K3 * R1, senderID, salt, KMAC2, KMAC3
+[M * K1 * K2 * K3] * [k1^-1 * R1] = [M * K2 * K3 * R1], senderID, salt, KMAC2, KMAC3
 
 // hop 2
-[M * K2 * K3 * R1] * [k2^-1 * R2] = M * K3 * R1 * R2, senderID, salt, KMAC3
+[M * K2 * K3 * R1] * [k2^-1 * R2] = [M * K3 * R1 * R2], senderID, salt, KMAC3
 
 // hop 3
-[M * K3 * R1 * R2] * [k3^-1 * R3] = M * R1 * R2 * R3
+[M * K3 * R1 * R2] * [k3^-1 * R3] = [M * R1 * R2 * R3]
+```
+
+At hop 1, the mix node receives this message:
+
+```
+[M * K1 * K2 * K3 * R1], senderID, salt, KMAC2, KMAC3
+```
+
+Hop 1 compares `HMAC(K1, K1) == KMAC1`. Hop 1 removes
+the KMAC1 field from the message. Hop 1 cryptographically transforms
+the payload portion of the message by removing the `K1` factor by
+multiplying in it's inverse:
+
+```
+[M * K1 * K2 * K3] * [k1^-1 * R1]
+```
+
+Therefore the message transmitted from
+Hop 1 to Hop 2 is:
+
+```
+[M * K2 * K3 * R1], senderID, salt, KMAC2, KMAC3
 ```
 
 Once all mixes process the message in this way, all the K values are
