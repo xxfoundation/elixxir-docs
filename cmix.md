@@ -455,13 +455,13 @@ M * K1 * K2 * K3, senderID, salt, KMAC1, KMAC2, KMAC3
 ```
 
 The fist field is the message M encrypted with the three shared keys,
-K1, K2 and K3. And to be clear, the message M is the precise payload
-size that matches the size of the space covered by the prime order cyclic
-group. The ciphertext is computed using modular multiplication over
-the prime order cyclic group. Therefore the first field implies
-computing `M * K1 * K2 * K3 mod p` where p is the RFC 3526 specified
-4096 bit ModP cyclic group previously mentioned in the Ciphersuite
-section at the beginning of this document.
+K1, K2 and K3. The message M is the precise payload size that matches
+the size of the space covered by the prime order cyclic group. The
+ciphertext is computed using modular multiplication over the prime
+order cyclic group. Therefore the first field implies computing `M *
+K1 * K2 * K3 mod p` where p is the RFC 3526 specified 4096 bit ModP
+cyclic group previously mentioned in the Ciphersuite section at the
+beginning of this document.
 
 The KMACs fields are used to ensure that the ciphertext was composed of the
 expected symmetric keys.
