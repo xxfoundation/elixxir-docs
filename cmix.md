@@ -445,7 +445,7 @@ cMix real-time protocol phase by only considering a single message
 whereas our mix node implementation operates on 1000 messages per mix
 batch.
 
-### Phase 1 - Preprocessing
+### Phase 1 - Preprocessing and Re-Encryption
 
 Firstly, the cMix client makes use of the [xx network's wire protocol, gRPC/TLS/TCP/IP](wire.md),
 and sends the following to the Gateway:
@@ -471,8 +471,34 @@ and an R value being multiplied in. For example the first hop removes the K1
 value from the message ciphertext and multiplies in the R1 value:
 
 
+**Glossary**
+
+* M: The message sent by the client, traversing the mix network.
+
+* K1, K2, K3: Shared symmetric keys known by the client and the respective mix node.
+
+* R1, R2, R3: Random values introduced by each mix node.
+
+* S1, S2, S3: Random values introduced by each mix node.
+
+* permute: A function which permutes a list. We use the Fisher Yates Shuffle algorithm.
+
+
 ```
 [M * K1 * K2 * K3] * [k1^-1 * R1] = M * K2 * K3 * R1, senderID, salt, KMAC2, KMAC3
+```
+
+If we describe all the transformations in this phase it would look like this for three hops:
+
+```
+// hop 1
+[M * K1 * K2 * K3] * [k1^-1 * R1] = M * K2 * K3 * R1, senderID, salt, KMAC2, KMAC3
+
+// hop 2
+[M * K2 * K3 * R1] * [k2^-1 * R2] = M * K3 * R1 * R2, senderID, salt, KMAC3
+
+// hop 3
+[M * K3 * R1 * R2] * [k3^-1 * R3] = M * R1 * R2 * R3
 ```
 
 Once all mixes process the message in this way, all the K values are
