@@ -434,14 +434,14 @@ encryption such that the input is transformed so that the output
 message is different. The two cannot be linked by their patterns of
 bits.
 
-2. The output message slots are shuffle in relation to the input
-message slots. Batches of messages are fixed size. The mix network
+2. The output message slots are shuffled in relation to the input
+message slots. Batches of messages are fixed size. The mix node
 must shuffle the batch of messages so that a given input message slot
-is not linked with a specific output slot. Below our notation denotes
-a shuffle with the `permute` function.
+is not linked with a specific output slot. Below our notation using
+the `permute` function denotes using the Fish Yates shuffling alogrithm.
 
 Each cMix message is composed of two payloads, PayloadA and PayloadB.
-The reason for this design choice is simple: In ElGamal, the message
+The reason for this design is simple: In ElGamal, the message
 size is limited to the size of the cyclic group space. It turns out
 that our choice of 4096 bit cyclic group did not provide a big enough
 payload capacity for a few of our intended use cases. One of those use
