@@ -537,7 +537,7 @@ And after traversing all the mix nodes in the cascade the message becomes:
 {M * R1 * R2 * R3} * {S1} * {S2} * {S3}
 ```
 
-Here we use the curly brackets to denot a variable from the correct
+Here we use the curly brackets to denote a variable from the correct
 mix node message slot. From the precomputation phases the mixes
 already know the inverse of all the R and S values multiplied
 together:
