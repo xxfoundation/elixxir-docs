@@ -419,6 +419,36 @@ see the gory details in the code, here:
 
 https://git.xx.network/xx_network/crypto/-/blob/release/csprng/source.go#L82-186
 
+## Mix Node Slot
+
+Here we have the protobuf definition of the Slot message type. It
+actually has two discrete uses.  The first is for precomputation
+fields and for that it's exchanged between mix nodes. The other use is
+realtime mixing where the client sends the Slot message to the Gateway
+and it continues through the mix cascade.
+
+```
+// Represents a single encrypted message in a batch
+message Slot {
+    // Index in batch this slot belongs in
+    uint32 Index = 1;
+
+    // Precomputation fields
+    bytes EncryptedPayloadAKeys = 2;
+    bytes EncryptedPayloadBKeys = 3;
+    bytes PartialPayloadACypherText = 4;
+    bytes PartialPayloadBCypherText = 5;
+    bytes PartialRoundPublicCypherKey = 6;
+
+    // Realtime/client fields
+    bytes SenderID = 7; // 256 bit Sender Id
+    bytes PayloadA = 8; // Len(Prime) bit length payload A (contains part of encrypted payload)
+    bytes PayloadB = 9; // Len(Prime) bit length payload B (contains part of encrypted payload, and associated data)
+    bytes Salt = 10; // Salt to identify message key
+    repeated bytes KMACs = 11; // Individual Key MAC for each node in network
+}
+```
+
 ## Real-time Mix Node Message Processing
 
 This section describes the cMix mixing strategy. Many of the
@@ -553,6 +583,31 @@ This precomputed value is used to reveal the message, M:
 ```
 
 This last message reveal computation is performed by the last mix in the mix cascade.
+
+## Cascade Mix Precomputation
+
+The Precomputation phases of the protocol which happen before the
+real-time mixing results in the following computed value, in a mix
+cascade compose of three mix nodes:
+
+```
+(({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1)
+```
+
+However a prerequisite for computing this value is the computation of
+a shared secret among all the mix nodes in the given mix cascade. We
+call this the `multiparty diffiehellman` and it's computed like so:
+
+```
+g^a^b^c
+```
+
+Furthermore our code contains the assertion:
+
+```
+g^a^b^c == g^b^c^a == g^c^b^a == g^c^a^b == g^b^a^c == g^b^a^c == g^a^c^b
+```
+
 
 
 ## Message Identification
