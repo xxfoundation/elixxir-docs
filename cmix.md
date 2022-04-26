@@ -605,7 +605,7 @@ g^a^b^c
 Furthermore our code contains the assertion:
 
 ```
-g^a^b^c == g^b^c^a == g^c^b^a == g^c^a^b == g^b^a^c == g^b^a^c == g^a^c^b
+g^a^b^c == g^b^c^a == g^c^b^a == g^c^a^b == g^b^a^c == g^a^c^b
 ```
 
 
