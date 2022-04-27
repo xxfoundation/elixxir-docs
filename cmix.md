@@ -584,6 +584,13 @@ This precomputed value is used to reveal the message, M:
 
 This last message reveal computation is performed by the last mix in the mix cascade.
 
+**Notice:** The notation in the above mathematical expressions
+indicate the use of the permutation function before multiplying the
+terms together to make them easier to read. Our implimentation runs
+the permute function last because it was easier to implement that
+way. These are mathematically equivalent as long as they are done
+consistently.
+
 ## Cascade Mix Precomputation
 
 The Precomputation phases of the protocol which happen before the
@@ -608,7 +615,76 @@ Furthermore our code contains the assertion:
 g^a^b^c == g^b^c^a == g^c^b^a == g^c^a^b == g^b^a^c == g^a^c^b
 ```
 
+As a reminder we previously defined our ElGamal Encryption like this:
 
+```
+func ElGamal_Encrypt(key, payload []byte) []byte {
+	return key * payload % p
+}
+```
+
+We assume `p` is defined as our prime order cyclic group.
+
+### Step 1 Multiplying the R values
+
+The first mix node in the cascade encrypts it's `R` value and sends
+it to the next mix node.
+
+```
+ElGamal_Encrypt(k, R1)
+```
+
+Each node in turn encrypts it's `R` value and multiplies it into the
+received ciphertext sending the results to the next mix node.
+
+```
+// Hop 1
+ElGamal_Encrypt(k, R1)
+
+// Hop 2
+ElGamal_Encrypt(k, R1) * ElGamal_Encrypt(k, R2)
+
+// Hop 3
+ElGamal_Encrypt(k, R1) * ElGamal_Encrypt(k, R2) * ElGamal_Encrypt(k, R3)
+```
+
+But we can also express this more simply:
+
+```
+k * (R1 * R2 * R3)
+```
+
+### Step 2 Multiplying the S values and calculating the permutation
+
+
+The first mix node in the cascade receives `k * (R1 * R2 * R3)` and then
+performs the following calculation and sends it to the next mix node:
+
+```
+permute{k * (R1 * R2 * R3)} * S1
+```
+
+Each node in turn processes the received message with calculating the
+permutation and then multiplying in the `S` value:
+
+```
+// Hop 1
+permute{k * (R1 * R2 * R3)} * S1
+
+// Hop 2
+permute{permute{k * (R1 * R2 * R3)} * S1} * S2
+
+// Hop 3
+permute{permute{permute{k * (R1 * R2 * R3)} * S1} * S2} * S3
+```
+
+### Step 3 Decryption
+
+To decrypt we multiple the ciphertext message with the inverse of the key:
+
+```
+k^-1 * permute{permute{permute{k * (R1 * R2 * R3)} * S1} * S2} * S3 = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
+```
 
 ## Message Identification
 
