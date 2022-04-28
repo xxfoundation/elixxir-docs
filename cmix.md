@@ -499,7 +499,7 @@ K1, K2 and K3. The message M is the precise payload size that matches
 the size of the space covered by the prime order cyclic group. The
 ciphertext is computed using modular multiplication over the prime
 order cyclic group. Therefore the first field implies computing:
-`M * K1 * K2 * K3 mod p` where p is the RFC 3526 specified 4096 bit ModP
+`M * K1 * K2 * K3 % p` where p is the RFC 3526 specified 4096 bit ModP
 cyclic group previously mentioned in the Ciphersuite section at the
 beginning of this document.
 
@@ -601,57 +601,181 @@ cascade compose of three mix nodes:
 (({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1)
 ```
 
+### Setup Shared Public Key
+
 However a prerequisite for computing this value is the computation of
 a shared secret among all the mix nodes in the given mix cascade. We
 call this the `multiparty diffiehellman` and it's computed like so:
+
+1. The first mix node generates a new key, `a` and raises `g` to the
+   power of `a` and sends that to the next mix node:
+
+```
+g^a
+```
+2. The second mix node generates a new key, `b` and receives `g^a` and
+   raises this to the power of `b` and sends that to the next mix node:
+
+```
+g^a^b
+```
+3. The last mix node generates a new key, `c` and receives `g^a^b` and
+   raises this to the power of `c` and broadcasts this to all the other nodes:
 
 ```
 g^a^b^c
 ```
 
+The [cMix paper](https://eprint.iacr.org/2016/008.pdf) mentions the
+generation of this shared public key in the `Setup` section on page 7
+at the bottom of the page.  Our implementation computes the shared
+secret here:
+
+https://git.xx.network/elixxir/server/-/blob/0cf5347fc01920e7099cf0274d8b5bc8a4768a19/graphs/precomputation/share.go#L87
+
+
+The last mix node sends the shared public key the rest of mix nodes in the cascade.
 Furthermore our code contains the assertion:
 
 ```
 g^a^b^c == g^b^c^a == g^c^b^a == g^c^a^b == g^b^a^c == g^a^c^b
 ```
 
-As a reminder we previously defined our ElGamal Encryption like this:
+### Requisite Mathematical Considerations
+
+Remember the transformations of exponents:
 
 ```
-func ElGamal_Encrypt(key, payload []byte) []byte {
-	return key * payload % p
+g^a * g^b = g^(a + b)
+```
+
+And also remember that just like addition and multiplication,
+exponentiation is commutative:
+
+```
+g^a^b = g^b^a = g^(a*b)
+```
+
+And likewise we must remember multiplying the inverse of a term
+is equivalent to division by that term:
+
+```
+x^-1 = 1/x
+
+g^b = g^(a*b) * g^a^-1
+
+g^b = g^(a*b) / g^a
+```
+
+### Requisite ElGamal Encryption Considerations
+
+The cMix paper defines it's ElGamal encryption function like this:
+
+```
+func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+	x := randKeyGen()
+	return g^x, payload * key^x
 }
 ```
 
-We assume `p` is defined as our prime order cyclic group.
-
-### Step 1 Multiplying the R values
-
-The first mix node in the cascade encrypts it's `R` value and sends
-it to the next mix node.
+However we define it like this in our implementation:
 
 ```
-ElGamal_Encrypt(k, R1)
+func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+	x := randKeyGen()
+	return payload * g^x % p, key^x % p
+
+}
+```
+
+That is, in either case the `ElGamal_Encrypt` function returns a
+2-tuple, however in our implementation the first element of this
+2-tuple contains the message ciphertext and the later element contains
+the encrypted key.
+
+In the above notation the `p` is meant to be our prime order cyclic
+group; from now on the modulo will be implied and not explicitly
+written in each expression and equation. In this ElGamal encryption
+example the we generate a new key pair:
+
+```
+private_key := genKey()
+public_key := g^private_key
+```
+
+In this next pseudo code sample we take `x` to be the randomly generated
+key within the above `ElGamal_Encryption` function definition:
+
+```
+ElGamal_Encrypt(public_key, message)
+= [message * g^x, key^x]
+= [message * g^x, public_key^x]
+= [message * g^x, g^private_key^x]
+```
+Our Strip function definition looks like this:
+
+```
+func Strip(key, ciphertext []byte) []byte {
+	return (key^-1) * ciphertext
+}
+```
+Which works like this:
+
+```
+private_key := genKey()
+public_key := g^private_key
+
+ElGamal_Encrypt(public_key, message)
+= [message * g^x, key^x]
+= [message * g^x, public_key^x]
+= [message * g^x, g^private_key^x]
+= ciphertext, encrypted_key
+
+= Strip(encrypted_key * private_key^-1, ciphertext)
+= Strip(g^x, ciphertext)
+= Strip(g^x, message * g^x)
+= (message * g^x) * g^x^-1
+= message
+```
+
+### Precomputation Phase 1: Multiplying in the encrypted R values
+
+In this phase of the protocol is initialized with a 2-tuple value
+of (1,1). Each mix in turn processes it's recieved 2-tuple, performs
+it's computation and sends a new 2-tuple to the next mix node.
+The computation performed at each mix node is simply:
+Multiple the given 2-tuple with the resulting 2-tuple of the
+ElGamal encryption of that node's R value. In pseudo code it looks
+like this where the given 2-tuple is `(encrypted_key, ciphertext)`:
+```
+func handle_phase1(encrypted_key, ciphertext []byte) ([]byte, []byte) {
+	new_ciphertext, new_encrypted_key = ElGamal_Encrypt(k, R)
+	return ciphertext * new_ciphertext, encrypted_key * new_encrypted_key
+}
 ```
 
 Each node in turn encrypts it's `R` value and multiplies it into the
 received ciphertext sending the results to the next mix node.
 
+The first hop receives the 2-tuple (1,1):
+
 ```
-// Hop 1
-ElGamal_Encrypt(k, R1)
+(c1, c2) = ElGamal_Encrypt(z1, R1)
+```
+
+```
 
 // Hop 2
-ElGamal_Encrypt(k, R1) * ElGamal_Encrypt(k, R2)
+ElGamal_Encrypt(z1, R1) * ElGamal_Encrypt(z2, R2)
 
 // Hop 3
-ElGamal_Encrypt(k, R1) * ElGamal_Encrypt(k, R2) * ElGamal_Encrypt(k, R3)
+ElGamal_Encrypt(z1, R1) * ElGamal_Encrypt(z2, R2) * ElGamal_Encrypt(z3, R3)
 ```
 
 But we can also express this more simply:
 
 ```
-k * (R1 * R2 * R3)
+(z1 * z2 * z3) * (R1 * R2 * R3)
 ```
 
 ### Step 2 Multiplying the S values and calculating the permutation
@@ -683,8 +807,16 @@ permute{permute{permute{k * (R1 * R2 * R3)} * S1} * S2} * S3
 To decrypt we multiple the ciphertext message with the inverse of the key:
 
 ```
-k^-1 * permute{permute{permute{k * (R1 * R2 * R3)} * S1} * S2} * S3 = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
+(z1 * z2 * z3)^-1 * permute{permute{permute{(z1 * z2 * z3) * (R1 * R2 * R3)} * S1} * S2} * S3 = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
 ```
+
+This is done one mix node key at a time as the message ciphertext traverse the mix cascade:
+
+```
+// 
+
+```
+
 
 ## Message Identification
 
