@@ -835,9 +835,9 @@ and an encrypted key of `Z^(x1 + x2 + x3)`.
 The following computation is performed:
 
 ```
-  encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S1)  
-  encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
-  encrypted_key = previous_encrypted_key * encrypted_key
+encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S1)
+encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
+encrypted_key = previous_encrypted_key * encrypted_key
 ```
 
 Each node in turn processes the received message with calculating the
