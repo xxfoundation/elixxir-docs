@@ -740,13 +740,17 @@ ElGamal_Encrypt(public_key, message)
 
 ### Precomputation Phase 1: Multiplying in the encrypted R values
 
-In this phase of the protocol is initialized with a 2-tuple value
-of (1,1). Each mix in turn processes it's recieved 2-tuple, performs
-it's computation and sends a new 2-tuple to the next mix node.
+In this phase of the protocol each mix node in turn multiplies
+in it's encrypted `R` value creating a new 2-tuple to send to the
+next mix node in the cascade.
+
+
+We initialize with a 2-tuple value of (1,1).
 The computation performed at each mix node is simply:
-Multiple the given 2-tuple with the resulting 2-tuple of the
+Multiply the given 2-tuple with the resulting 2-tuple of the
 ElGamal encryption of that node's R value. In pseudo code it looks
-like this where the given 2-tuple is `(encrypted_key, ciphertext)`:
+like this where the initial 2-tuple is passed into the function arguments:
+
 ```
 func handle_phase1(encrypted_key, ciphertext []byte) ([]byte, []byte) {
 	new_ciphertext, new_encrypted_key = ElGamal_Encrypt(k, R)
@@ -754,38 +758,86 @@ func handle_phase1(encrypted_key, ciphertext []byte) ([]byte, []byte) {
 }
 ```
 
-Each node in turn encrypts it's `R` value and multiplies it into the
-received ciphertext sending the results to the next mix node.
-
-The first hop receives the 2-tuple (1,1):
+Here's what all the expanded calculations look like for each hop:
 
 ```
-(c1, c2) = ElGamal_Encrypt(z1, R1)
-```
-
-```
+// Hop 1
+previous_ciphertext = 1
+previous_encrypted_key = 1
+ciphertext, encrypted_key = ElGamal_Encrypt(Z, R1)
+ciphertext                = R1 * g^x1
+encrypted_key             = Z^x1
+new_ciphertext = previous_ciphertext * ciphertext
+new_ciphertext = 1 * ciphertext
+new_ciphertext = 1 * R1 * g^x1
+new_ciphertext = R1 * g^x1
+new_encrypted_key = previous_encrypted_key * encrypted_key
+new_encrypted_key = 1 * encrypted_key
+new_encrypted_key = 1 * Z^x1
+new_encrypted_key = Z^x1
 
 // Hop 2
-ElGamal_Encrypt(z1, R1) * ElGamal_Encrypt(z2, R2)
+previous_ciphertext = new_ciphertext = R1 * g^x1
+previous_encrypted_key = new_encrypted_key = Z^x1
+ciphertext, encrypted_key = ElGamal_Encrypt(Z, R2)
+ciphertext                = R2 * g^x2
+encrypted_key             = Z^x2
+new_ciphertext = previous_ciphertext * ciphertext
+new_ciphertext = (R1 * g^x1) * ciphertext
+new_ciphertext = (R1 * g^x1) * R2 * g^x2
+new_ciphertext = R1 * R2 * g^x1 * g^x2
+new_ciphertext = R1 * R2 * g^(x1 + x2)
+new_encrypted_key = previous_encrypted_key * encrypted_key
+new_encrypted_key = Z^x1 * encrypted_key
+new_encrypted_key = Z^x1 * Z^x2
+new_encrypted_key = Z^(x1 + x2)
 
 // Hop 3
-ElGamal_Encrypt(z1, R1) * ElGamal_Encrypt(z2, R2) * ElGamal_Encrypt(z3, R3)
+previous_ciphertext = new_ciphertext = (R1 * R2 * g^(x1 + x2)
+previous_encrypted_key = new_encrypted_key = Z^(x1 + x2)
+previous_ciphertext = R1 * R2 * g^(x1 + x2)
+previous_encrypted_key = Z^(x1 + x2)
+ciphertext, encrypted_key = ElGamal_Encrypt(Z, R3)
+ciphertext                = R3 * g^x3
+encrypted_key             = Z^x3
+new_ciphertext = previous_ciphertext * ciphertext
+new_ciphertext = R1 * R2 * g^(x1 + x2) * ciphertext
+new_ciphertext = R1 * R2 * g^(x1 + x2) * R3 * g^x3
+new_ciphertext = R1 * R2 * R3 * g^(x1 + x2) * g^x3
+new_ciphertext = R1 * R2 * R3 * g^(x1 + x2 + x3)
+new_encrypted_key = previous_encrypted_key * encrypted_key
+new_encrypted_key = Z^(x1 + x2) * encrypted_key
+new_encrypted_key = Z^(x1 + x2) * Z^x3
+new_encrypted_key = Z^(x1 + x2 + x3)
 ```
 
-But we can also express this more simply:
+The above protocol phase concludes with a ciphertext composed of:
 
 ```
-(z1 * z2 * z3) * (R1 * R2 * R3)
+previous_encrypted_payload = R1 * R2 * R3 * g^(x1 + x2 + x3)
 ```
 
-### Step 2 Multiplying the S values and calculating the permutation
-
-
-The first mix node in the cascade receives `k * (R1 * R2 * R3)` and then
-performs the following calculation and sends it to the next mix node:
+And an encrypted key composed of:
 
 ```
-permute{k * (R1 * R2 * R3)} * S1
+previous_encrypted_key = Z^(x1 + x2 + x3)
+```
+
+The last mix node sends the computed 2-tuple to the first mix node in the cascade so that
+it can be used to initialize the next protocol phase.
+
+### Precomputation Phase 2: Multiplying the S values and calculating the permutation
+
+The first mix node in the cascade receives the 2-tuple computed in the previous
+protocol phase, that is, a ciphertext of `R1 * R2 * R3 * g^(x1 + x2 + x3)`
+and an encrypted key of `Z^(x1 + x2 + x3)`.
+
+The following computation is performed:
+
+```
+  encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S1)  
+  encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
+  encrypted_key = previous_encrypted_key * encrypted_key
 ```
 
 Each node in turn processes the received message with calculating the
@@ -793,13 +845,44 @@ permutation and then multiplying in the `S` value:
 
 ```
 // Hop 1
-permute{k * (R1 * R2 * R3)} * S1
+previous_encrypted_payload = R1 * R2 * R3 * g^(x1 + x2 + x3)
+previous_encrypted_key = Z^(x1 + x2 + x3)
+encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S1)  
+encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
+encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * encrypted_payload
+encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)
+encrypted_payload = permute{R1 * R2 * R3} * S1 * g^(permute{x1 + x2 + x3} + y1)
+encrypted_key = previous_encrypted_key * encrypted_key
+encrypted_key = Z^(x1 + x2 + x3) * encrypted_key
+encrypted_key = Z^(x1 + x2 + x3) * Z^y1
+encrypted_key = Z^(permute{x1 + x2 + x3} + y1)
 
 // Hop 2
-permute{permute{k * (R1 * R2 * R3)} * S1} * S2
+previous_encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)
+previous_encrypted_key = Z^(permute{x1 + x2 + x3} + y1)
+encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S2)
+encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
+encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * encrypted_payload
+encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)
+encrypted_payload = permute{permute{R1 * R2 * R3} * S1} * S2 * g^(permute{permute{x1 + x2 + x3} + y1} + y2)
+encrypted_key = previous_encrypted_key * encrypted_key
+encrypted_key = Z^(permute{x1 + x2 + x3} + y1) * encrypted_key
+encrypted_key = Z^(permute{x1 + x2 + x3} + y1) * permute{Z^y2}
+encrypted_key = Z^(permute{permute{x1 + x2 + x3} + y1} + y2)
 
 // Hop 3
-permute{permute{permute{k * (R1 * R2 * R3)} * S1} * S2} * S3
+previous_encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)
+previous_encrypted_key = Z^(permute{permute{x1 + x2 + x3} + y1} + y2)
+encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S3)
+encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
+encrypted_payload = permute{permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)} * encrypted_payload
+encrypted_payload = permute{permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)} * (S3 * g^y3)
+encrypted_payload = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3 * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = previous_encrypted_key * encrypted_key
+encrypted_key = Z^(x1 + x2 + x3) * Z^(y1 + y2) * encrypted_key
+encrypted_key = Z^(x1 + x2 + x3) * Z^(y1 + y2) * Z^y3
+encrypted_key = Z^(x1 + x2 + x3) * Z^(y1 + y2 + y3)
+encrypted_key = Z^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
 ```
 
 ### Step 3 Decryption
