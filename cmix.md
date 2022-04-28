@@ -598,7 +598,7 @@ real-time mixing results in the following computed value, in a mix
 cascade compose of three mix nodes:
 
 ```
-(({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1)
+(permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
 ```
 
 ### Setup Shared Public Key
@@ -885,21 +885,66 @@ encrypted_key = Z^(x1 + x2 + x3) * Z^(y1 + y2 + y3)
 encrypted_key = Z^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
 ```
 
-### Step 3 Decryption
+### Precomputation Phase 3: Reveal
 
 To decrypt we multiple the ciphertext message with the inverse of the key:
 
 ```
-(z1 * z2 * z3)^-1 * permute{permute{permute{(z1 * z2 * z3) * (R1 * R2 * R3)} * S1} * S2} * S3 = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
+(z1 * z2 * z3)^-1 * permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3 * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+= permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
 ```
 
-This is done one mix node key at a time as the message ciphertext traverse the mix cascade:
-
+Recall the definition of `Z`:
 ```
-// 
-
+Z = g^(z1 * z2 * z3)
 ```
 
+This is done one mix node key at a time as the message ciphertext traverses the mix cascade:
+
+```
+// Hop 1
+previous_encrypted_key = Z^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = strip(z1, previous_encrypted_key)
+encrypted_key = z1^-1 * previous_encrypted_key
+encrypted_key = z1^-1 * Z^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = z1^-1 * g^(z1 * z2 * z3)^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = g^(z2 * z3)^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+
+// Hop 2
+previous_encrypted_key = encrypted_key
+previous_encrypted_key = g^(z2 * z3)^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = strip(z2, previous_encrypted_key)
+encrypted_key = strip(z2, g^(z2 * z3)^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3))
+encrypted_key = z2^-1 * g^(z2 * z3)^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = g^z3^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+
+// Hop 3
+previous_encrypted_key = encrypted_key
+previous_encrypted_key = g^z3^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = strip(z3, previous_encrypted_key)
+encrypted_key = strip(z3, g^z3^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3))
+encrypted_key = z3^-1 * g^z3^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3))
+encrypted_key = g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3))
+```
+
+The last mix node determines the result:
+
+```
+encrypted_payload = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3 * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_key = g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3))
+payload = encrypted_key^-1 * encrypted_payload
+payload = encrypted_key^-1 * permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3 * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+payload = (g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)))^-1
+  * permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
+  * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+payload = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
+```
+
+The final precomputation value is:
+
+```
+(permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
+```
 
 ## Message Identification
 
