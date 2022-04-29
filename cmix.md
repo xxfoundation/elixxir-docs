@@ -1,19 +1,20 @@
-# The Elixxir cMix Design Specification
+# The xx network cMix Design Specification
 
 *version 0*
 
 ## Abstract
 
-This document describes the Elixxir cMix design variations and
-implementation parameterizations; that is, our mix strategy
-which is at the our of our mix network, our anonymous
-communications network.
+This document describes the xx network cMix design variations and
+implementation parameterizations; that is, our mixing strategy
+which is at the core design of our anonymous communication network.
 
 ## Introduction
 
 **cMix** is a verified mix strategy which uses the cryptographic and
 partial homomorphic properties of the [ElGamal encryption protocol](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/elgamal.pdf),
 which is described at length in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf).
+However this document will probably be a more approachable description
+of the core designs of the cMix mixing strategy.
 
 ## Ciphersuite
 
@@ -54,11 +55,10 @@ This prime is: 2^4096 - 2^4032 - 1 + 2^64 * { [2^3966 pi] + 240904 }
 https://datatracker.ietf.org/doc/html/rfc3526#section-5
 
 
-
 ## Message Structure
 
 Due to the nature of how ElGamal encryption works, the cMix payload in the paper
-is the same size as the encryption keys. In the case of the Elixxir mix network
+is the same size as the encryption keys. In the case of the xx network
 we use two payloads (defined below as payloadA and payloadB), each are 4096 bits
 in size as our keys are 4096 bits.
 
@@ -136,9 +136,6 @@ both leading bits flip to 1) identity a message they made multiplied
 garbage into for a tagging attack. This fix makes the leading its
 random in order to thwart that attack
 ```
-
-**FIXME:** Include gRPC schema, protocol semantics, network actors and description of protocol sequences.
-
 
 ## Protocol Phases
 
@@ -339,13 +336,33 @@ multiplying them together. The resulting key is then used to encrypt
 the cMix message payload.
 
 cMix message encryption is simply modular multiplication as described
-in the El Gamal paper where `p` is the modulus of the cyclic group:
+in the El Gamal paper. The cMix paper defines it's ElGamal encryption function like this:
 
 ```
-func ElGamal_Encrypt(key, payload []byte) []byte {
-	return key * payload % p
+func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+	x := randKeyGen()
+	return g^x % p, payload * key^x % p
 }
 ```
+
+However we define it like this in our implementation:
+
+```
+func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+	x := randKeyGen()
+	return payload * g^x % p, key^x % p
+
+}
+```
+
+That is, in either case the `ElGamal_Encrypt` function returns a
+2-tuple, however in our implementation the first element of this
+2-tuple contains the message ciphertext and the later element contains
+the encrypted key.
+
+In the above notation the `p` is meant to be our prime order cyclic
+group from RFC 3526; from now on the modulo will be implied and not explicitly
+written in each expression and equation.
 
 As previously mentioned, the cMix message has two payloads. Therefore the
 function to encrypt our client cMix payloads looks like this:
@@ -357,8 +374,8 @@ func clientEncrypt(msg Message, salt []byte, roundID RoundID, baseKeys []Key) Me
 	keyEcrA := ClientKeyGen(grp, salt, roundID, baseKeys)
 	keyEcrB := ClientKeyGen(grp, salt2, roundID, baseKeys)
 
-	EcrPayloadA := ElGamal_Encrypt(keyEcrA, msg.PayloadA)
-	EcrPayloadB := ElGamal_Encrypt(keyEcrB, msg.PayloadB)
+	EcrPayloadA, _ := ElGamal_Encrypt(keyEcrA, msg.PayloadA)
+	EcrPayloadB, _ := ElGamal_Encrypt(keyEcrB, msg.PayloadB)
 
 	primeLen := p.Len()
 	encryptedMsg := NewMessage(primeLen)
@@ -369,7 +386,7 @@ func clientEncrypt(msg Message, salt []byte, roundID RoundID, baseKeys []Key) Me
 }
 ```
 
-The keys to encrypt each payload are deterministically generated like this
+The keys to encrypt each payload are deterministically generated
 by iteratively hashing with Blake2b and then SHA256 each symmetric key along
 with the salt, cMix Round ID and the string "cmixClientNodeKeyGenerationSalt".
 The resulting 32 byte value is then feed into HKDF_SHA256, and expanded to
@@ -454,21 +471,23 @@ message Slot {
 This section describes the cMix mixing strategy. Many of the
 mathematical details are described in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf)
 and assume an understanding of cryptographic protocol composition
-using ElGamal.
+using ElGamal. However here we attempt a more approachable illudication
+of the cMix design.
 
 Keep in mind that a batch mix strategy at minimum has two basic goals each time
 it mixes a batch of messages:
 
-1. Bitwise message unlinkability: In this case it means message
+1. Bitwise message unlinkability: This means we use message
 encryption such that the input is transformed so that the output
 message is different. The two cannot be linked by their patterns of
 bits.
 
 2. The output message slots are shuffled in relation to the input
-message slots. Batches of messages are fixed size. The mix node
-must shuffle the batch of messages so that a given input message slot
-is not linked with a specific output slot. Below our notation using
-the `permute` function denotes using the Fish Yates shuffling alogrithm.
+message slots. Batches of messages are fixed size. The mix node must
+shuffle the batch of messages so that a given input message slot is
+not linked with a specific output slot. Below we write our pseudo code
+notation using the `permute` function to denote using the Fish Yates
+shuffling alogrithm.
 
 Each cMix message is composed of two payloads, PayloadA and PayloadB.
 The reason for this design is simple: In ElGamal, the message
@@ -485,23 +504,14 @@ explanation of the cMix real-time protocol phase by only considering a
 single message whereas our mix node implementation operates on 1000
 messages per mix batch.
 
-### Phase 1 - Preprocessing and Re-Encryption
+### Real-time Phase 1: Preprocessing and Re-Encryption
 
 Firstly, the cMix client makes use of the [xx network's wire protocol, gRPC/TLS/TCP/IP](wire.md),
-and sends the following to the Gateway:
+and sends a Slot message to the Gateway:
 
 ```
 M * K1 * K2 * K3, senderID, salt, KMAC1, KMAC2, KMAC3
 ```
-
-The fist field is the message M encrypted with the three shared keys,
-K1, K2 and K3. The message M is the precise payload size that matches
-the size of the space covered by the prime order cyclic group. The
-ciphertext is computed using modular multiplication over the prime
-order cyclic group. Therefore the first field implies computing:
-`M * K1 * K2 * K3 % p` where p is the RFC 3526 specified 4096 bit ModP
-cyclic group previously mentioned in the Ciphersuite section at the
-beginning of this document.
 
 The KMACs fields are used to ensure that the ciphertext was composed
 of the expected symmetric keys. Each hop through the mix cascade
@@ -524,27 +534,27 @@ If we describe all the transformations in this phase it would look like this for
 At hop 1, the mix node receives this message:
 
 ```
-[M * K1 * K2 * K3 * R1], senderID, salt, KMAC2, KMAC3
+[M * K1 * K2 * K3], senderID, salt, KMAC1, KMAC2, KMAC3
 ```
 
-Hop 1 compares `HMAC(K1, K1) == KMAC1`. Hop 1 removes
-the KMAC1 field from the message. Hop 1 cryptographically transforms
-the payload portion of the message by removing the `K1` factor by
+Hop 1 compares `HMAC(K1, K1) == KMAC1`, if not equal then the message
+is discarded, else continue. Hop 1 removes the KMAC1 field from the
+message. Hop 1 cryptographically transforms the payload portion of the
+message by multiplying in `R1` and by removing the `K1` factor by
 multiplying in it's inverse:
 
 ```
-[M * K1 * K2 * K3] * [k1^-1 * R1]
+[M * K1 * K2 * K3] * [K1^-1 * R1] = [M * K2 * K3 * R1]
 ```
 
-Therefore the message transmitted from
-Hop 1 to Hop 2 is:
+Therefore the message transmitted from Hop 1 to Hop 2 is:
 
 ```
 [M * K2 * K3 * R1], senderID, salt, KMAC2, KMAC3
 ```
 
 Once all mixes process the message in this way, all the K values are
-removed from the message and the R values are multiplied in.
+removed from the message and the `R` values are multiplied in.
 Additionally the SenderID, Salt, KMACs are stripped off the message
 resulting in the following message ciphertext:
 
@@ -552,7 +562,7 @@ resulting in the following message ciphertext:
 M * R1 * R2 * R3
 ```
 
-### Phase 2 - Mixing
+### Real-time Phase 2: Mixing
 
 Every mix node reorders all messages in the batch and multiplies in blinding factor S.
 For example the output of the first mix node includes the `S1` factor:
@@ -564,22 +574,15 @@ permute{M * R1 * R2 * R3} * S1
 And after traversing all the mix nodes in the cascade the message becomes:
 
 ```
-{M * R1 * R2 * R3} * {S1} * {S2} * {S3}
+permute{permute{permute{M * R1 * R2 * R3} * S1} * S2} * S3
 ```
 
-Here we use the curly brackets to denote a variable from the correct
-mix node message slot. From the precomputation phases the mixes
-already know the inverse of all the R and S values multiplied
-together:
-
-```
-({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1
-```
+### Real-time Phase 3: Reveal
 
 This precomputed value is used to reveal the message, M:
 
 ```
-({M * R1 * R2 * R3} * {S1} * {S2} * {S3}) * (({R1 * R2 * R3} * {S1} * {S2} * {S3})^-1) = M
+(permute{permute{permute{M * R1 * R2 * R3} * S1} * S2} * S3) * ((permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1) = M
 ```
 
 This last message reveal computation is performed by the last mix in the mix cascade.
@@ -589,7 +592,7 @@ indicate the use of the permutation function before multiplying the
 terms together to make them easier to read. Our implimentation runs
 the permute function last because it was easier to implement that
 way. These are mathematically equivalent as long as they are done
-consistently.
+consistently throughout all protocol phases.
 
 ## Cascade Mix Precomputation
 
@@ -628,13 +631,13 @@ g^a^b^c
 
 The [cMix paper](https://eprint.iacr.org/2016/008.pdf) mentions the
 generation of this shared public key in the `Setup` section on page 7
-at the bottom of the page.  Our implementation computes the shared
+at the bottom of the page. Our implementation computes the shared
 secret here:
 
 https://git.xx.network/elixxir/server/-/blob/0cf5347fc01920e7099cf0274d8b5bc8a4768a19/graphs/precomputation/share.go#L87
 
 
-The last mix node sends the shared public key the rest of mix nodes in the cascade.
+The last mix node sends the shared public key to the rest of mix nodes in the cascade.
 Furthermore our code contains the assertion:
 
 ```
