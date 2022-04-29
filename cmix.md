@@ -596,17 +596,22 @@ consistently throughout all protocol phases.
 
 ## Cascade Mix Precomputation
 
-The Precomputation phases of the protocol which happen before the
-real-time mixing results in the following computed value, in a mix
-cascade compose of three mix nodes:
+The Precomputation phases of the protocol happens before the
+real-time mixing. The results of the precomputation in a mix
+cascade composed of three mix nodes is computed like this:
 
 ```
 (permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
 ```
 
+In our above notation each of the R1 and S1 variables indicate a random
+value chosen by the first mix node. Each R and S value in turn is selected
+by each mix in the cascade. It is a group computation which is achieved by
+using the homomorphic properties of modulo multiplication.
+
 ### Setup Shared Public Key
 
-However a prerequisite for computing this value is the computation of
+A prerequisite for the precomputation protocol phases is the computation of
 a shared secret among all the mix nodes in the given mix cascade. We
 call this the `multiparty diffiehellman` and it's computed like so:
 
@@ -890,11 +895,18 @@ encrypted_key = Z^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
 
 ### Precomputation Phase 3: Reveal
 
-To decrypt we multiple the ciphertext message with the inverse of the key:
+The reveal phase results in the following for
+our mix cascade composed of three mix nodes:
 
 ```
-(z1 * z2 * z3)^-1 * permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3 * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
-= permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
+(permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
+```
+
+We operate on the encrypted key and the ciphertext computed from the previous protocol phase:
+
+```
+encrypted_key = Z^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
+encrypted_payload = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3 * g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)
 ```
 
 Recall the definition of `Z`:
@@ -943,7 +955,13 @@ payload = (g^(permute{permute{permute{x1 + x2 + x3} + y1} + y2} + y3)))^-1
 payload = permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3
 ```
 
-The final precomputation value is:
+The decrypted value is:
+
+```
+(permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)
+```
+
+We invert the value to achieve the final precomputation value:
 
 ```
 (permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
