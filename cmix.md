@@ -471,7 +471,7 @@ message Slot {
 This section describes the cMix mixing strategy. Many of the
 mathematical details are described in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf)
 and assume an understanding of cryptographic protocol composition
-using ElGamal. However here we attempt a more approachable illudication
+using ElGamal. However here we attempt a more approachable explanation
 of the cMix design.
 
 Keep in mind that a batch mix strategy at minimum has two basic goals each time
@@ -483,11 +483,19 @@ message is different. The two cannot be linked by their patterns of
 bits.
 
 2. The output message slots are shuffled in relation to the input
-message slots. Batches of messages are fixed size. The mix node must
-shuffle the batch of messages so that a given input message slot is
-not linked with a specific output slot. Below we write our pseudo code
-notation using the `permute` function to denote using the Fish Yates
-shuffling alogrithm.
+message slots.
+
+An implied consequence of the fundamental design goals of mix networks
+is end to end encryption from the sending client to the last mix node
+in the mix cascade. This guarantees message authenticity and confidentiality
+all the way to the last node. After that point the contents of the message
+will not be protected by the mix network protocol.
+
+Mix networks have an *anytrust* threat model which means that clients can
+rely on the mix cascade to provide anonymity privacy properties as long
+as any of the mix nodes in that mix cascade are honest and not compromised.
+See our [threat model document](threat_model.md) for more discussion about
+our mix network threat model.
 
 Each cMix message is composed of two payloads, PayloadA and PayloadB.
 The reason for this design is simple: In ElGamal, the message
@@ -502,7 +510,9 @@ composed of three mix nodes. However this can in principle be scaled
 to N mix nodes per cascade. And likewise we attempt to simplify the
 explanation of the cMix real-time protocol phase by only considering a
 single message whereas our mix node implementation operates on 1000
-messages per mix batch.
+messages per mix batch. Below we write our pseudo code notation using
+the `permute` function to denote using the Fisher Yates shuffling
+alogrithm.
 
 ### Real-time Phase 1: Preprocessing and Re-Encryption
 
