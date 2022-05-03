@@ -1,5 +1,9 @@
 # The xx network cMix Design Specification
 
+Ben Wenger
+Rick Carback
+David Stainton
+
 *version 0*
 
 ## Abstract
@@ -976,6 +980,95 @@ We invert the value to achieve the final precomputation value:
 ```
 (permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
 ```
+
+## Network Identities
+
+Network Identities in the xx network are composed of a 256 bit value
+and 8 bit type The types are as follows:
+
+* 0x00 Generic: Components which do not fit with other
+  classifications. Example: Permissioning Server.
+
+* 0x01 Mix Node: Mix nodes composing the network.
+
+* 0x02 Gateway: Gateways within the network. Will always have the same
+  value as its associated node.
+
+* 0x03 Client: A client of the network.
+
+Identity values are computed by hashing the sender's RSA public key
+and a random 32 byte salt value:
+```
+value = H(rsa_public_key | salt)
+```
+
+We then combine the ID value with the ID type for our sending client ID, for example:
+```
+sender_id = value | 0x03
+```
+
+### Ephemeral Receiver Identities
+
+Ephemeral Recipient IDs in the network will be generated from a
+Recipient ID. When a user joins the network they will register two
+identities, a Transmission ID and a Recipient ID. They will only
+communicate with nodes via their Transmission IDs and will identify
+themselves to users in the network via their Recipient IDs. From a
+recipient ID, an Ephemeral recipient ID will be generated through the
+use of network identity size s, rotating at a set period p, with a
+phase offset o.
+
+A recipient ID will be calculated as:
+
+```
+ephemeral_recipient_id = H(H(recipient_id) | rotation_salt)[0:s]
+```
+
+The phase offset o will be:
+
+```
+o = H(recipient_id) % num_offsets
+```
+
+Where num offsets is a predefined network constant describing the
+number of different change points. A recommended value for a p of 1
+day is 2^16.
+
+The rotation salt will be dependent on the current timestamp: The
+phase of the timestamp will be computed at:
+
+```
+timestamp_phase = timestamp % p
+```
+
+If the Timestamp Phase is less than phase offset o, then the rotation
+salt used will be:
+
+```
+rotation_salt = floor((timestamp - p) / p)
+```
+
+otherwise
+
+```
+rotation_salt = floor(timestamp / p)
+```
+
+Will be used.
+
+A double hash of the RecipientID is used so the intermediary hash can
+be provided to third parties to track when you collide without
+providing them the information needed to evaluate Identity
+Fingerprints (see below). This can support notification systems with
+comparatively weak privacy properties.
+
+Ephemeral ID Structure
+
+The maximum size that Ephemeral IDs can grow to is 264, giving support
+for up to 264-1 simultaneous users. Within messages, the entire 64 bit
+space will be used in the message structure, with the unused bits
+being filled with random data. When gossiped or stored, the unused
+bits will all be 0.
 
 ## Message Identification
 
