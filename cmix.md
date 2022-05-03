@@ -1062,10 +1062,10 @@ providing them the information needed to evaluate Identity
 Fingerprints (see below). This can support notification systems with
 comparatively weak privacy properties.
 
-Ephemeral ID Structure
+### Ephemeral ID Structure
 
-The maximum size that Ephemeral IDs can grow to is 264, giving support
-for up to 264-1 simultaneous users. Within messages, the entire 64 bit
+The maximum size that Ephemeral IDs can grow to is 2^64, giving support
+for up to 2^64-1 simultaneous users. Within messages, the entire 64 bit
 space will be used in the message structure, with the unused bits
 being filled with random data. When gossiped or stored, the unused
 bits will all be 0.
