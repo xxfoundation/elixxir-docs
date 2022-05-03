@@ -1,8 +1,8 @@
 # The xx network cMix Design Specification
 
-Ben Wenger
-Rick Carback
-David Stainton
+Ben Wenger  
+Rick Carback  
+David Stainton  
 
 *version 0*
 
