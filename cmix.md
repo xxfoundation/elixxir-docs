@@ -22,7 +22,7 @@ of the core designs of the cMix mixing strategy.
 
 ## Ciphersuite
 
-For our cMix implementation we are using the RFC 3526 specified 4096 bit ModP cyclic group for our ElGamal/cMix
+For our cMix implementation we are using the RFC 3526 specified 4096 bit Mod P cyclic group for our ElGamal/cMix
 encryption and homomorphic operations:
 
 ```
@@ -169,6 +169,107 @@ hoped that this glossary will help you understand the pseudo code.
 * Verify(public_key, data, signature): Returns a boolean which will be
   true if the `signature` is a signature of `data` and is valid for the
   given public key.
+
+
+## Requisite Mathematical Considerations
+
+Remember the transformations of exponents:
+
+```
+g^a * g^b = g^(a + b)
+```
+
+And also remember that just like addition and multiplication,
+exponentiation is commutative:
+
+```
+g^a^b = g^b^a = g^(a*b)
+```
+
+And likewise we must remember multiplying the inverse of a term
+is equivalent to division by that term:
+
+```
+x^-1 = 1/x
+
+g^b = g^(a*b) * g^a^-1
+
+g^b = g^(a*b) / g^a
+```
+
+### Requisite ElGamal Encryption Considerations
+
+The cMix paper defines it's ElGamal encryption function like this:
+
+```
+func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+	x := randKeyGen()
+	return g^x, payload * key^x
+}
+```
+
+However we define it like this in our implementation:
+
+```
+func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+	x := randKeyGen()
+	return payload * g^x % p, key^x % p
+
+}
+```
+
+That is, in either case the `ElGamal_Encrypt` function returns a
+2-tuple, however in our implementation the first element of this
+2-tuple contains the message ciphertext and the later element contains
+the encrypted key.
+
+In the above notation the `p` is meant to be our prime order cyclic
+group as defined above in the [Ciphersuite](#Ciphersuite) section;
+from now on the modulo will be implied and not explicitly written in
+each expression and equation. In this ElGamal encryption example the
+we generate a new key pair:
+
+```
+private_key := genKey()
+public_key := g^private_key
+```
+
+In this next pseudo code sample we take `x` to be the randomly generated
+key within the above `ElGamal_Encryption` function definition:
+
+```
+ElGamal_Encrypt(public_key, message)
+// which is equivalent to any of these two tuples:
+= (message * g^x, key^x)
+= (message * g^x, public_key^x)
+= (message * g^x, g^private_key^x)
+```
+Our Strip function definition looks like this:
+
+```
+func Strip(key, ciphertext []byte) []byte {
+	return (key^-1) * ciphertext
+}
+```
+Which works like this:
+
+```
+private_key := genKey()
+public_key := g^private_key
+
+// computes: (message * g^x, public_key^x)
+ciphertext, encrypted_key = ElGamal_Encrypt(public_key, message)
+
+message = Strip(encrypted_key * private_key^-1, ciphertext)
+// computes:
+// Strip(g^x, ciphertext)
+// which is equivalent to:
+// Strip(g^x, message * g^x)
+// which could also be written like this:
+// (message * g^x) * g^x^-1
+// which of course reveals the message:
+// message
+```
 
 ### Preparation Phase
 
@@ -661,103 +762,6 @@ Furthermore our code contains the assertion:
 
 ```
 g^a^b^c == g^b^c^a == g^c^b^a == g^c^a^b == g^b^a^c == g^a^c^b
-```
-
-### Requisite Mathematical Considerations
-
-Remember the transformations of exponents:
-
-```
-g^a * g^b = g^(a + b)
-```
-
-And also remember that just like addition and multiplication,
-exponentiation is commutative:
-
-```
-g^a^b = g^b^a = g^(a*b)
-```
-
-And likewise we must remember multiplying the inverse of a term
-is equivalent to division by that term:
-
-```
-x^-1 = 1/x
-
-g^b = g^(a*b) * g^a^-1
-
-g^b = g^(a*b) / g^a
-```
-
-### Requisite ElGamal Encryption Considerations
-
-The cMix paper defines it's ElGamal encryption function like this:
-
-```
-func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
-	x := randKeyGen()
-	return g^x, payload * key^x
-}
-```
-
-However we define it like this in our implementation:
-
-```
-func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
-	x := randKeyGen()
-	return payload * g^x % p, key^x % p
-
-}
-```
-
-That is, in either case the `ElGamal_Encrypt` function returns a
-2-tuple, however in our implementation the first element of this
-2-tuple contains the message ciphertext and the later element contains
-the encrypted key.
-
-In the above notation the `p` is meant to be our prime order cyclic
-group; from now on the modulo will be implied and not explicitly
-written in each expression and equation. In this ElGamal encryption
-example the we generate a new key pair:
-
-```
-private_key := genKey()
-public_key := g^private_key
-```
-
-In this next pseudo code sample we take `x` to be the randomly generated
-key within the above `ElGamal_Encryption` function definition:
-
-```
-ElGamal_Encrypt(public_key, message)
-= [message * g^x, key^x]
-= [message * g^x, public_key^x]
-= [message * g^x, g^private_key^x]
-```
-Our Strip function definition looks like this:
-
-```
-func Strip(key, ciphertext []byte) []byte {
-	return (key^-1) * ciphertext
-}
-```
-Which works like this:
-
-```
-private_key := genKey()
-public_key := g^private_key
-
-ElGamal_Encrypt(public_key, message)
-= [message * g^x, key^x]
-= [message * g^x, public_key^x]
-= [message * g^x, g^private_key^x]
-= ciphertext, encrypted_key
-
-= Strip(encrypted_key * private_key^-1, ciphertext)
-= Strip(g^x, ciphertext)
-= Strip(g^x, message * g^x)
-= (message * g^x) * g^x^-1
-= message
 ```
 
 ### Precomputation Phase 1: Multiplying in the encrypted R values
