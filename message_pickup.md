@@ -1,4 +1,10 @@
-# The xx network message pickup
+# The xx network message pickup design
+
+Ben Wenger  
+Rick Carback  
+David Stainton  
+
+*version 0*
 
 ## Abstract
 
