@@ -46,6 +46,13 @@ mixnet services may be added. That is, instead of delivering a message
 to a message spool, the message is instead passed on to the mixnet
 service plugin which then can determine the fate of the message.
 
+### Pseudo Code Cryptographic Function Glossary
+
+* |: byte concatenation
+
+* H(x): H is a cryptographic hash function. Usually in our
+  implementation this is Blake2b.
+
 ## The xx network Gateway wire protocol
 
 * elixxir:comms/messages/messages.proto: Defines all of services and structures
