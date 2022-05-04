@@ -206,7 +206,7 @@ our designs avoid trial decryption. Each cMix message has a message
 fingerprint field. The fingerprint field is used in one of two ways to
 find the proper decryption key.
 
-#### Match by Message Fingerprint
+## Match by Message Fingerprint
 
 Clients keep track of their fingerprints to key
 mappings so that they can later match keys for decryption of received
@@ -231,7 +231,7 @@ the relationship fingerprint to derive the per message fingerprint:
 If no fingerprint mapping was found then Trial Hashing Service Identities
 are checked for a match, described below.
 
-#### Match by Trial Hashing Service Identities
+## Match by Trial Hashing Service Identities
 
 Due to the extra overhead of trial hashing, services are processed
 after fingerprints. If a fingerprint match occurs on the message,
