@@ -203,7 +203,7 @@ The cMix paper defines it's ElGamal encryption function like this:
 
 ```
 func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
-	x := randKeyGen()
+	x = randKeyGen()
 	return g^x, payload * key^x
 }
 ```
@@ -212,7 +212,7 @@ However we define it like this in our implementation:
 
 ```
 func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
-	x := randKeyGen()
+	x = randKeyGen()
 	return payload * g^x % p, key^x % p
 
 }
@@ -230,8 +230,8 @@ each expression and equation. In this ElGamal encryption example the
 we generate a new key pair:
 
 ```
-private_key := genKey()
-public_key := g^private_key
+private_key = genKey()
+public_key = g^private_key
 ```
 
 In this next pseudo code sample we take `x` to be the randomly generated
@@ -254,21 +254,20 @@ func Strip(key, ciphertext []byte) []byte {
 Which works like this:
 
 ```
-private_key := genKey()
-public_key := g^private_key
+private_key = genKey()
+public_key = g^private_key
 
-// computes: (message * g^x, public_key^x)
-ciphertext, encrypted_key = ElGamal_Encrypt(public_key, message)
+// computes: (sent_message * g^x, public_key^x)
+ciphertext, encrypted_key = ElGamal_Encrypt(public_key, sent_message)
 
 message = Strip(encrypted_key * private_key^-1, ciphertext)
-// computes:
+
+// which computes the message reveal:
 // Strip(g^x, ciphertext)
 // which is equivalent to:
 // Strip(g^x, message * g^x)
 // which could also be written like this:
 // (message * g^x) * g^x^-1
-// which of course reveals the message:
-// message
 ```
 
 ### Preparation Phase
@@ -445,7 +444,7 @@ in the El Gamal paper. The cMix paper defines it's ElGamal encryption function l
 
 ```
 func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
-	x := randKeyGen()
+	x = randKeyGen()
 	return g^x % p, payload * key^x % p
 }
 ```
@@ -454,7 +453,7 @@ However we define it like this in our implementation:
 
 ```
 func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
-	x := randKeyGen()
+	x = randKeyGen()
 	return payload * g^x % p, key^x % p
 
 }
@@ -474,16 +473,16 @@ function to encrypt our client cMix payloads looks like this:
 
 ```
 func clientEncrypt(msg Message, salt []byte, roundID RoundID, baseKeys []Key) Message {
-	salt2 := H(salt)
+	salt2 = H(salt)
 
-	keyEcrA := ClientKeyGen(grp, salt, roundID, baseKeys)
-	keyEcrB := ClientKeyGen(grp, salt2, roundID, baseKeys)
+	keyEcrA = ClientKeyGen(grp, salt, roundID, baseKeys)
+	keyEcrB = ClientKeyGen(grp, salt2, roundID, baseKeys)
 
-	EcrPayloadA, _ := ElGamal_Encrypt(keyEcrA, msg.PayloadA)
-	EcrPayloadB, _ := ElGamal_Encrypt(keyEcrB, msg.PayloadB)
+	EcrPayloadA, _ = ElGamal_Encrypt(keyEcrA, msg.PayloadA)
+	EcrPayloadB, _ = ElGamal_Encrypt(keyEcrB, msg.PayloadB)
 
-	primeLen := p.Len()
-	encryptedMsg := NewMessage(primeLen)
+	primeLen = p.Len()
+	encryptedMsg = NewMessage(primeLen)
 	encryptedMsg.SetPayloadA(EcrPayloadA.LeftpadBytes(uint64(primeLen)))
 	encryptedMsg.SetPayloadB(EcrPayloadB.LeftpadBytes(uint64(primeLen)))
 
@@ -499,16 +498,16 @@ the correct number of bytes for the prime order cyclic group.
 
 ```
 func ClientKeyGen(salt []byte, roundID RoundID, symmetricKeys []*Key) *Key {
-	output := NewKey()
-	tmpKey := NewKey()
+	output = NewKey()
+	tmpKey = NewKey()
 
-	for _, symmetricKey := range symmetricKeys {
-		h := SHA256_Hash(
+	for _, symmetricKey = range symmetricKeys {
+		h = SHA256_Hash(
 		         Blake2b_Hash(
 				     symmetricKey | salt | roundID | "cmixClientNodeKeyGenerationSalt"))
-	    hashFunc := func() goHash.Hash { return sha256.New() }
-        keyGen := hkdf.Expand(hashFunc, h, nil)
-		pBytes := make([]byte, p.Len())
+	    hashFunc = func() goHash.Hash { return sha256.New() }
+        keyGen = hkdf.Expand(hashFunc, h, nil)
+		pBytes = make([]byte, p.Len())
 	    tmpKey, err = csprng.GenerateInGroup(pBytes, len(p.Len()), keyGen)
 		if err != nil {
 			panic(err)
@@ -861,7 +860,7 @@ and an encrypted key of `Z^(x1 + x2 + x3)`.
 The following computation is performed:
 
 ```
-encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S1)
+encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S1)
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_key = previous_encrypted_key * encrypted_key
 ```
@@ -873,7 +872,7 @@ permutation and then multiplying in the `S` value:
 // Hop 1
 previous_encrypted_payload = R1 * R2 * R3 * g^(x1 + x2 + x3)
 previous_encrypted_key = Z^(x1 + x2 + x3)
-encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S1)  
+encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S1)  
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * encrypted_payload
 encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)
@@ -886,7 +885,7 @@ encrypted_key = Z^(permute{x1 + x2 + x3} + y1)
 // Hop 2
 previous_encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)
 previous_encrypted_key = Z^(permute{x1 + x2 + x3} + y1)
-encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S2)
+encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S2)
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * encrypted_payload
 encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)
@@ -899,7 +898,7 @@ encrypted_key = Z^(permute{permute{x1 + x2 + x3} + y1} + y2)
 // Hop 3
 previous_encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)
 previous_encrypted_key = Z^(permute{permute{x1 + x2 + x3} + y1} + y2)
-encrypted_payload, encrypted_key := ElGamal_Encrypt(Z, S3)
+encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S3)
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_payload = permute{permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)} * encrypted_payload
 encrypted_payload = permute{permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)} * (S3 * g^y3)
