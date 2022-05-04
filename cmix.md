@@ -240,7 +240,6 @@ key within the above `ElGamal_Encryption` function definition:
 ```
 ElGamal_Encrypt(public_key, message)
 // which is equivalent to any of these two tuples:
-= (message * g^x, key^x)
 = (message * g^x, public_key^x)
 = (message * g^x, g^private_key^x)
 ```
