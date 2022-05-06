@@ -237,9 +237,11 @@ Per message fingerprints are derived from three inputs:
 The second half of the basekey is hashed along with the key ID and
 the relationship fingerprint to derive the per message fingerprint:
 
-	data := basekey
-	data = data[len(data)/2:]
-	message_fingerprint := H(data | key_id | relationship_fingerprint...)
+```
+data = basekey
+data = data[len(data) / 2:]
+message_fingerprint = H(data | key_id | relationship_fingerprint)
+```
 
 If no fingerprint mapping was found then Trial Hashing Service Identities
 are checked for a match, described below.
