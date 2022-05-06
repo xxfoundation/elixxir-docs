@@ -261,3 +261,20 @@ func ForMe(contents, hash []byte, s Service) bool {
 	return H(H(s.Identifier | s.Tag) | contents) == hash
 }
 ```
+
+## Mixing Rounds
+
+Mixing rounds are identified by a sequential monotonically increasing integer
+known as the round ID. Here are the round states:
+
+* PENDING: not started yet
+* PRECOMPUTING: In the process of preparing to process messages
+* STANDBY - Completed precomputing but not yet scheduled to run
+* QUEUED - Scheduled to run at a set time
+* REALTIME - Running, actively handing messages
+* COMPLETED - Successfully deleted messages
+* FAILED - Failed to deliver messages
+
+Clients send the latest Round ID they known about and receive a reply with new Round IDs.
+
+
