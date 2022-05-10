@@ -104,7 +104,7 @@ to a different round.
 ### Receiving messages
 
 A bloom filter is returned as part of the stream and is used by the
-client to determine if a message ID has a message delivered or
+client to determine if an ephemeral message ID has a message delivered or
 not. The client may call `RequestMessages` with a set of message IDs
 that have been initially confirmed with the bloom filter.
 
@@ -276,5 +276,14 @@ known as the round ID. Here are the round states:
 * FAILED - Failed to deliver messages
 
 Clients send the latest Round ID they known about and receive a reply with new Round IDs.
+
+
+## Gateway Message Queueing Behavior
+
+When a Gateway receives a message it replicates that message to all
+the other Gateways in the group. Messages are queued for 21 days.
+As per the [hardware requirements for Gateways](https://xxnetwork.wiki/Hardware_Requirements)
+Gateways have 500 GB of storage space. Gateways retain bloom filters for 30 minutes.
+
 
 
