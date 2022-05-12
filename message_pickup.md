@@ -280,10 +280,13 @@ Clients send the latest Round ID they known about and receive a reply with new R
 
 ## Gateway Message Queueing Behavior
 
-When a Gateway receives a message it replicates that message to all
-the other Gateways in the group. Messages are queued for 21 days.
-As per the [hardware requirements for Gateways](https://xxnetwork.wiki/Hardware_Requirements)
-Gateways have 500 GB of storage space. Gateways retain bloom filters for 30 minutes.
+The last mix in the cascade sends the received messages to it's own Gateway.
+Then it sends the messages to the 4 other mixes in the cascade who in turn
+send the messages to their own Gateways.
+
+Messages are queued for 21 days. As per the [hardware requirements for Gateways](https://xxnetwork.wiki/Hardware_Requirements)
+Gateways have 500 GB of storage space.
+Gateways retain bloom filters for 30 minutes.
 
 
 
