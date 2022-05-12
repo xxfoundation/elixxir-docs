@@ -569,6 +569,16 @@ message Slot {
 }
 ```
 
+## Inbound Message Queueing
+
+Clients send their messages to any Gateway which in turn proxies the
+message to the Gateway assigned to the chosen mix cascade.  The
+cascade's assigned Gateway queues messages until either 1000 messages
+are accumulated or no more time is left to collect messages.
+The Gateway then sends the batch of 1000 messages to the first mix node.
+If less than 1000 messages were accumulated then the Gateway sends dummy
+messages in place of the missing messages.
+
 ## Real-time Mix Node Message Processing
 
 This section describes the cMix mixing strategy. Many of the
