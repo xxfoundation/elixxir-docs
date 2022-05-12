@@ -66,17 +66,6 @@ messages to the gateways.
 
 ## Elixxir has a modular design with the intent for general purpose usage
 
-### Pluggable gateways
-
-Gateways can run admin supplied plugins which run arbitrary network
-services that respond to queries routed over the mix network sent by
-anonymous clients.
-
-### General purpose client library 
-
-The Elixxir client library can be used to write clients which interact
-with the mixnet services.
-
 ## Threat model summary
 
 A mix node is a kind of cryptographic router which uses some kind of

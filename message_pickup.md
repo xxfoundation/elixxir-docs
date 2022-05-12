@@ -288,5 +288,9 @@ Messages are queued for 21 days. As per the [hardware requirements for Gateways]
 Gateways have 500 GB of storage space.
 Gateways retain bloom filters for 30 minutes.
 
+## Gateway Gossips
 
-
+Gateways gossip bloom filters and ingress client message rate limits.
+Therefore all the Gateways will eventually have a copy of every bloom
+filter. Clients use the round info to determine which Gateways are
+storing their incoming messages.
