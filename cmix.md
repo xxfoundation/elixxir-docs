@@ -262,11 +262,11 @@ ciphertext, encrypted_key = ElGamal_Encrypt(public_key, sent_message)
 message = Strip(encrypted_key * private_key^-1, ciphertext)
 
 // which computes the message reveal:
-// Strip(g^x, ciphertext)
+Strip(g^x, ciphertext)
 // which is equivalent to:
-// Strip(g^x, message * g^x)
+Strip(g^x, message * g^x)
 // which could also be written like this:
-// (message * g^x) * g^x^-1
+(message * g^x) * g^x^-1
 ```
 
 ### Preparation Phase
@@ -542,7 +542,7 @@ https://git.xx.network/xx_network/crypto/-/blob/release/csprng/source.go#L82-186
 ## Mix Node Slot
 
 Here we have the protobuf definition of the Slot message type. It
-actually has two discrete uses.  The first is for precomputation
+actually has two discrete uses. The first is for precomputation
 fields and for that it's exchanged between mix nodes. The other use is
 realtime mixing where the client sends the Slot message to the Gateway
 and it continues through the mix cascade.

@@ -55,10 +55,10 @@ The Elixxir mix network has several components:
 
 All components exchange information with the PKI so that public key
 material and connectivity information is known by all network components.
-Mix nodes are arranged into many mix cascades. Clients can only communicate with
-the gateways. Gateways route client message onto the correct mix
-cascade. The terminating hop of the mix cascade routes messages to the
-gateways.
+Mix nodes are arranged into many mix cascades with five mix nodes per cascade.
+Clients can only communicate with the gateways. Gateways route client message
+onto the correct mix cascade. The terminating hop of the mix cascade routes
+messages to the gateways.
 
 
 **FIXME**: Add diagram containing: gateways, mix cascades, clients and pki.
