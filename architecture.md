@@ -60,6 +60,11 @@ Clients can only communicate with the gateways. Gateways route client message
 onto the correct mix cascade. The terminating hop of the mix cascade routes
 messages to the gateways.
 
+There are five mix nodes per cascade. Each mix node has an assigned Gateway.
+Gateways for a given cascade store egress messages for later pickup by recipients.
+See our [message pickup](message_pickup.md) design document for more information.
+Gateways participate in a gossip protocol which exchanges client ingress rate limiting
+information and bloom filters for egress message recipient ephemeral IDs.
 
 **FIXME**: Add diagram containing: gateways, mix cascades, clients and pki.
 
