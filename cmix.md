@@ -14,16 +14,23 @@ which is at the core design of our anonymous communication network.
 
 ## Introduction
 
-**cMix** is a verified mix strategy which uses the cryptographic and
+**cMix** is a verified batch mixing strategy which uses the cryptographic and
 partial homomorphic properties of the [ElGamal encryption protocol](https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/elgamal.pdf),
 which is described at length in the [published cMix paper](https://eprint.iacr.org/2016/008.pdf).
-However this document will probably be a more approachable description
+However this document will very likely be a much more approachable description
 of the core designs of the cMix mixing strategy.
+
+One of the main motivations behind the cMix design is the
+computational efficiency of the real time mixing phase of the protocol
+which does not perform any public key operations. The real time phase
+is essentially a series of modular multiplications within a prime
+order cyclic group. This is made possible by the precomputation phase.
 
 ## Ciphersuite
 
-For our cMix implementation we are using the RFC 3526 specified 4096 bit Mod P cyclic group for our ElGamal/cMix
-encryption and homomorphic operations:
+For our cMix implementation we are using the RFC 3526 specified 4096
+bit Mod P cyclic group for our ElGamal/cMix encryption and homomorphic
+operations:
 
 ```
 This prime is: 2^4096 - 2^4032 - 1 + 2^64 * { [2^3966 pi] + 240904 }
@@ -63,7 +70,7 @@ https://datatracker.ietf.org/doc/html/rfc3526#section-5
 
 Due to the nature of how ElGamal encryption works, the cMix payload in the paper
 is the same size as the encryption keys. In the case of the xx network
-we use two payloads (defined below as payloadA and payloadB), each are 4096 bits
+we use two payloads (defined below as `payloadA` and `payloadB`), each are 4096 bits
 in size as our keys are 4096 bits.
 
 ```
@@ -94,7 +101,8 @@ PayloadA and PayloadB are within the group
 
 Contents1 and Contents2 are used to transmit the mix network client's
 payload whereas the other sections of the message have various other
-uses. Our source code [^0] represents this with a Message type in Go:
+uses. Our [source code](https://git.xx.network/elixxir/primitives/-/blob/release/format/message.go)
+represents this with a Message type in Go:
 
 ```
 // Message structure stores all the data serially. Subsequent fields point to
@@ -173,6 +181,9 @@ hoped that this glossary will help you understand the pseudo code.
 
 ## Requisite Mathematical Considerations
 
+You should be familiar with how the diffiehellman shared secret computation
+works. If not we recommend reading [New Directions In Cryptography](https://ee.stanford.edu/~hellman/publications/24.pdf).
+
 Remember the transformations of exponents:
 
 ```
@@ -180,7 +191,7 @@ g^a * g^b = g^(a + b)
 ```
 
 And also remember that just like addition and multiplication,
-exponentiation is commutative:
+exponentiation is also commutative:
 
 ```
 g^a^b = g^b^a = g^(a*b)
@@ -202,7 +213,7 @@ g^b = g^(a*b) / g^a
 The cMix paper defines it's ElGamal encryption function like this:
 
 ```
-func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+func elgamal_encrypt(key, payload []byte) ([]byte, []byte) {
 	x = randKeyGen()
 	return g^x, payload * key^x
 }
@@ -211,14 +222,14 @@ func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
 However we define it like this in our implementation:
 
 ```
-func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+func elgamal_encrypt(key, payload []byte) ([]byte, []byte) {
 	x = randKeyGen()
 	return payload * g^x % p, key^x % p
 
 }
 ```
 
-That is, in either case the `ElGamal_Encrypt` function returns a
+That is, in either case the `elgamal_encrypt` function returns a
 2-tuple, however in our implementation the first element of this
 2-tuple contains the message ciphertext and the later element contains
 the encrypted key.
@@ -235,18 +246,18 @@ public_key = g^private_key
 ```
 
 In this next pseudo code sample we take `x` to be the randomly generated
-key within the above `ElGamal_Encryption` function definition:
+key within the above `elgamal_encryption` function definition:
 
 ```
-ElGamal_Encrypt(public_key, message)
-// which is equivalent to any of these two tuples:
+elgamal_encrypt(public_key, message)
+// which is equivalent to either of these 2-tuples:
 = (message * g^x, public_key^x)
 = (message * g^x, g^private_key^x)
 ```
-Our Strip function definition looks like this:
+Our strip function definition looks like this:
 
 ```
-func Strip(key, ciphertext []byte) []byte {
+func strip(key, ciphertext []byte) []byte {
 	return (key^-1) * ciphertext
 }
 ```
@@ -257,14 +268,14 @@ private_key = genKey()
 public_key = g^private_key
 
 // computes: (sent_message * g^x, public_key^x)
-ciphertext, encrypted_key = ElGamal_Encrypt(public_key, sent_message)
+ciphertext, encrypted_key = elgamal_encrypt(public_key, sent_message)
 
-message = Strip(encrypted_key * private_key^-1, ciphertext)
+message = strip(encrypted_key * private_key^-1, ciphertext)
 
 // which computes the message reveal:
-Strip(g^x, ciphertext)
+strip(g^x, ciphertext)
 // which is equivalent to:
-Strip(g^x, message * g^x)
+strip(g^x, message * g^x)
 // which could also be written like this:
 (message * g^x) * g^x^-1
 ```
@@ -274,23 +285,24 @@ Strip(g^x, message * g^x)
 Before sending a cMix message, the client needs to participate in a
 preparatory protocol phase by sending key requests and processing
 responses. This protocol interaction between the client and the
-Gateway is done so using the xx network's wire protocol, also known as
+Gateway is done so using the [xx network's wire protocol](wire.md), also known as
 gRPC/TLS/IP.
 
 Each mix node is paired with one Gateway. The client is directly
-connected to a Gateway which can proxy the key requests to the correct
-Gateway. This Gateway in turn proxies the key request to the
-destination mix node. The mix node's reply takes the reverse of this
-route back to the client. This is a strict request/response protocol
-with essentially only two message types as we shall soon see.
+connected to an arbitrary Gateway. All gateways are capable of
+proxying the key requests to the correct Gateway. This Gateway in turn
+proxies the key request to the destination mix node. The mix node's
+reply takes the reverse of this route back to the client. This is a
+strict request/response protocol with essentially only two message
+types as we shall soon see.
 
 ![Client key request response protocol diagram](images/client_proxy_gw_node_request_key.png)
 
-The client composes a ClientKeyRequest and then encapsulates it within
-a SignedClientKeyRequest along with a signature. Within the
-ClientKeyRequest itself there is a SignedRegistrationConfirmation
+The client composes a `ClientKeyRequest` and then encapsulates it within
+a `SignedClientKeyRequest` along with a signature. Within the
+`ClientKeyRequest` itself there is a `SignedRegistrationConfirmation`
 which also must be verified by the recipient. Here are the protobuf
-definitions for ClientKeyRequest and SignedClientKeyRequest:
+definitions for `ClientKeyRequest` and `SignedClientKeyRequest`:
 
 ```
 message ClientKeyRequest {
@@ -318,18 +330,20 @@ message SignedClientKeyRequest {
 }
 ```
 
-That ClientKeyRequestSignature is in fact not merely a signature of
-the serialized ClientKeyRequest because the signing algorithm is RSA
+That `ClientKeyRequestSignature` is in fact not merely a signature of
+the serialized `ClientKeyRequest` because the signing algorithm is RSA
 therefore the output will be the same size as the input which in this
-case is the hash of the serialized ClientKeyRequest. The client's DH
+case is the hash of the serialized `ClientKeyRequest`. The client's DH
 public key is cryptographically linked with this signature since it's
 encapsulating message is serialized, hashed and then signed. This is
 common practice when using RSA signatures.
 
+Here's where the signature is created:
+
 https://git.xx.network/elixxir/client/-/blob/release/network/node/register.go#L225
 
 
-The response message is of type SignedKeyResponse which encapsulates
+The response message is of type `SignedKeyResponse` which encapsulates
 ClientKeyResponse:
 
 ```
@@ -350,9 +364,9 @@ message SignedKeyResponse {
 ```
 
 However this message is proxied through the client's Gateway which
-puts the ClientGatewayKey into a database and then removes it from the
-message. Therefore the client only receives the KeyResponse and the
-signature. As the field name implies, KeyResponseSignedByGateway
+puts the `ClientGatewayKey` into a database and then removes it from the
+message. Therefore the client only receives the `KeyResponse` and the
+signature. As the field name implies, `KeyResponseSignedByGateway`
 contains a signature computed by the Gateway.
 
 Here we use pseudo code to show the cryptographic operations done by
@@ -397,8 +411,8 @@ func node_handle_key_request(request *SignedKeyRequest) (*SignedKeyResponse, err
 }
 ```
 
-The SignedKeyResponse is then proxied through the Gateway who signs
-the message and removes the ClientGatewayKey, roughly in pseudo code
+The `SignedKeyResponse` is then proxied through the Gateway who signs
+the message and removes the `ClientGatewayKey`, roughly in pseudo code
 like this:
 
 ```
@@ -412,7 +426,7 @@ func gateway_proxy_response(response *SignedKeyResponse) *SignedKeyResponse {
 ```
 
 The client checks the response signature and then derives the
-encryption_key via a Diffiehellman computation and then decrypts the
+`encryption_key` via a Diffiehellman computation and then decrypts the
 key:
 
 ```
@@ -439,10 +453,11 @@ multiplying them together. The resulting key is then used to encrypt
 the cMix message payload.
 
 cMix message encryption is simply modular multiplication as described
-in the El Gamal paper. The cMix paper defines it's ElGamal encryption function like this:
+in the ElGamal paper. The cMix paper defines it's ElGamal encryption
+function like this:
 
 ```
-func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+func elgamal_encrypt(key, payload []byte) ([]byte, []byte) {
 	x = randKeyGen()
 	return g^x % p, payload * key^x % p
 }
@@ -451,14 +466,14 @@ func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
 However we define it like this in our implementation:
 
 ```
-func ElGamal_Encrypt(key, payload []byte) ([]byte, []byte) {
+func elgamal_encrypt(key, payload []byte) ([]byte, []byte) {
 	x = randKeyGen()
 	return payload * g^x % p, key^x % p
 
 }
 ```
 
-That is, in either case the `ElGamal_Encrypt` function returns a
+That is, in either case the `elgamal_encrypt` function returns a
 2-tuple, however in our implementation the first element of this
 2-tuple contains the message ciphertext and the later element contains
 the encrypted key.
@@ -477,8 +492,8 @@ func clientEncrypt(msg Message, salt []byte, roundID RoundID, baseKeys []Key) Me
 	keyEcrA = ClientKeyGen(grp, salt, roundID, baseKeys)
 	keyEcrB = ClientKeyGen(grp, salt2, roundID, baseKeys)
 
-	EcrPayloadA, _ = ElGamal_Encrypt(keyEcrA, msg.PayloadA)
-	EcrPayloadB, _ = ElGamal_Encrypt(keyEcrB, msg.PayloadB)
+	EcrPayloadA, _ = elgamal_encrypt(keyEcrA, msg.PayloadA)
+	EcrPayloadB, _ = elgamal_encrypt(keyEcrB, msg.PayloadB)
 
 	primeLen = p.Len()
 	encryptedMsg = NewMessage(primeLen)
@@ -541,10 +556,10 @@ https://git.xx.network/xx_network/crypto/-/blob/release/csprng/source.go#L82-186
 
 ## Mix Node Slot
 
-Here we have the protobuf definition of the Slot message type. It
+Here we have the protobuf definition of the `Slot` message type. It
 actually has two discrete uses. The first is for precomputation
 fields and for that it's exchanged between mix nodes. The other use is
-realtime mixing where the client sends the Slot message to the Gateway
+realtime mixing where the client sends the `Slot` message to the Gateway
 and it continues through the mix cascade.
 
 ```
@@ -630,7 +645,7 @@ alogrithm.
 ### Real-time Phase 1: Preprocessing and Re-Encryption
 
 Firstly, the cMix client makes use of the [xx network's wire protocol, gRPC/TLS/TCP/IP](wire.md),
-and sends a Slot message to the Gateway:
+and sends a `Slot` message to the Gateway:
 
 ```
 M * K1 * K2 * K3, senderID, salt, KMAC1, KMAC2, KMAC3
@@ -727,10 +742,10 @@ cascade composed of three mix nodes is computed like this:
 (permute{permute{permute{R1 * R2 * R3} * S1} * S2} * S3)^-1
 ```
 
-In our above notation each of the R1 and S1 variables indicate a random
-value chosen by the first mix node. Each R and S value in turn is selected
+In our above notation each of the `R1` and `S1` variables indicate a random
+value chosen by the first mix node. Each `R` and `S` value in turn is selected
 by each mix in the cascade. It is a group computation which is achieved by
-using the homomorphic properties of modulo multiplication.
+using the homomorphic properties of modular multiplication.
 
 ### Setup Shared Public Key
 
@@ -782,12 +797,12 @@ next mix node in the cascade.
 We initialize with a 2-tuple value of (1,1).
 The computation performed at each mix node is simply:
 Multiply the given 2-tuple with the resulting 2-tuple of the
-ElGamal encryption of that node's R value. In pseudo code it looks
+ElGamal encryption of that node's `R` value. In pseudo code it looks
 like this where the initial 2-tuple is passed into the function arguments:
 
 ```
 func handle_phase1(encrypted_key, ciphertext []byte) ([]byte, []byte) {
-	new_ciphertext, new_encrypted_key = ElGamal_Encrypt(k, R)
+	new_ciphertext, new_encrypted_key = elgamal_encrypt(k, R)
 	return ciphertext * new_ciphertext, encrypted_key * new_encrypted_key
 }
 ```
@@ -798,7 +813,7 @@ Here's what all the expanded calculations look like for each hop:
 // Hop 1
 previous_ciphertext = 1
 previous_encrypted_key = 1
-ciphertext, encrypted_key = ElGamal_Encrypt(Z, R1)
+ciphertext, encrypted_key = elgamal_encrypt(Z, R1)
 ciphertext                = R1 * g^x1
 encrypted_key             = Z^x1
 new_ciphertext = previous_ciphertext * ciphertext
@@ -813,7 +828,7 @@ new_encrypted_key = Z^x1
 // Hop 2
 previous_ciphertext = new_ciphertext = R1 * g^x1
 previous_encrypted_key = new_encrypted_key = Z^x1
-ciphertext, encrypted_key = ElGamal_Encrypt(Z, R2)
+ciphertext, encrypted_key = elgamal_encrypt(Z, R2)
 ciphertext                = R2 * g^x2
 encrypted_key             = Z^x2
 new_ciphertext = previous_ciphertext * ciphertext
@@ -831,7 +846,7 @@ previous_ciphertext = new_ciphertext = (R1 * R2 * g^(x1 + x2)
 previous_encrypted_key = new_encrypted_key = Z^(x1 + x2)
 previous_ciphertext = R1 * R2 * g^(x1 + x2)
 previous_encrypted_key = Z^(x1 + x2)
-ciphertext, encrypted_key = ElGamal_Encrypt(Z, R3)
+ciphertext, encrypted_key = elgamal_encrypt(Z, R3)
 ciphertext                = R3 * g^x3
 encrypted_key             = Z^x3
 new_ciphertext = previous_ciphertext * ciphertext
@@ -869,7 +884,7 @@ and an encrypted key of `Z^(x1 + x2 + x3)`.
 The following computation is performed:
 
 ```
-encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S1)
+encrypted_payload, encrypted_key = elgamal_encrypt(Z, S1)
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_key = previous_encrypted_key * encrypted_key
 ```
@@ -881,7 +896,7 @@ permutation and then multiplying in the `S` value:
 // Hop 1
 previous_encrypted_payload = R1 * R2 * R3 * g^(x1 + x2 + x3)
 previous_encrypted_key = Z^(x1 + x2 + x3)
-encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S1)  
+encrypted_payload, encrypted_key = elgamal_encrypt(Z, S1)  
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * encrypted_payload
 encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)
@@ -894,7 +909,7 @@ encrypted_key = Z^(permute{x1 + x2 + x3} + y1)
 // Hop 2
 previous_encrypted_payload = permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)
 previous_encrypted_key = Z^(permute{x1 + x2 + x3} + y1)
-encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S2)
+encrypted_payload, encrypted_key = elgamal_encrypt(Z, S2)
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * encrypted_payload
 encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)
@@ -907,7 +922,7 @@ encrypted_key = Z^(permute{permute{x1 + x2 + x3} + y1} + y2)
 // Hop 3
 previous_encrypted_payload = permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)
 previous_encrypted_key = Z^(permute{permute{x1 + x2 + x3} + y1} + y2)
-encrypted_payload, encrypted_key = ElGamal_Encrypt(Z, S3)
+encrypted_payload, encrypted_key = elgamal_encrypt(Z, S3)
 encrypted_payload = permute{previous_encrypted_payload} * encrypted_payload
 encrypted_payload = permute{permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)} * encrypted_payload
 encrypted_payload = permute{permute{permute{R1 * R2 * R3 * g^(x1 + x2 + x3)} * (S1 * g^y1)} * (S2 * g^y2)} * (S3 * g^y3)
@@ -1003,15 +1018,3 @@ We invert the value to achieve the final precomputation value:
 * The design of the message storage and retrieval deliberately avoids
   leaking identities to non-recipients. Using deterministic message
   fingerprints to tag messages and avoid trial decryption.
-
-## Citations
-
-- Taher El Gamal. A public key cryptosystem and a signature scheme based on
-  discrete logarithms.
-  https://people.csail.mit.edu/alinush/6.857-spring-2015/papers/elgamal.pdf
-  In Proceedings of CRYPTO 84 on Advances in cryptology,
-  pages 10–18. Springer-Verlag New York, Inc., 1985.
-
-
-
-[^0] https://git.xx.network/elixxir/primitives/-/blob/release/format/message.go
