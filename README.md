@@ -15,8 +15,8 @@ our software.
    
    - [cMix Protocol](cmix.md)
    
-   - [End to End](end_to_end.md)
+   - [End to End Cryptographic Protocol](end_to_end.md)
 
-
+   - [Message Pickup](message_pickup.md)
 
 
