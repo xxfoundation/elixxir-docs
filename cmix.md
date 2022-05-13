@@ -639,8 +639,7 @@ to N mix nodes per cascade. And likewise we attempt to simplify the
 explanation of the cMix real-time protocol phase by only considering a
 single message whereas our mix node implementation operates on 1000
 messages per mix batch. Below we write our pseudo code notation using
-the `permute` function to denote using the Fisher Yates shuffling
-alogrithm.
+the `permute` function to denote using the [Fisher Yates shuffling alogrithm](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle).
 
 ### Real-time Phase 1: Preprocessing and Re-Encryption
 
