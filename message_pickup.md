@@ -25,9 +25,12 @@ any of the gateways.
 
 The full end to end path looks like this:
 
-**FIXME**: add an explainatory diagram
+![sending message mixnet diagram](images/send_message.png)
 
-client -> gateway -> mix cascade -> gateway
+Clients interact with a random Gateway in the network which in turn
+proxies outbound messages to the correct Gateway associated with
+the destination mix cascade. Currently mix cascades have five mix nodes.
+The last mix node sends the message to it's Gateway.
 
 This transport protocol does not require all communication parties to
 be online at the same time. Messages are queued for up to two weeks in
