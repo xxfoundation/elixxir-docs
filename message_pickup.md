@@ -25,7 +25,7 @@ any of the gateways.
 
 The full end to end path looks like this:
 
-![sending message mixnet diagram](images/send_message.png)
+![sending message mixnet diagram](images/message_send.png)
 
 Clients interact with a random Gateway in the network which in turn
 proxies outbound messages to the correct Gateway associated with
