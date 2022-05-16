@@ -26,7 +26,7 @@ exchanged less frequently than every message.
   expansion, identity generation, and identification codes. Used to
   combine Diffie–Helman and SIDH keys after key integration.
 * HMAC-SHA256: Length is 256 bits. Message HMACs.
-* [Diffie–Helmen](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange): Length is 3072 bits. Discrete log-based component of key negotiation.
+* [Diffie–Hellmen](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange): Length is 3072 bits. Discrete log-based component of key negotiation.
 * [SIDH](https://sike.org/files/SIDH-spec.pdf): Length of public key is 3024 bits. Quantum resistant component of key negotiation.
 
 ## Auth Request Response Protocol

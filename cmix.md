@@ -182,7 +182,7 @@ hoped that this glossary will help you understand the pseudo code.
 ## Requisite Mathematical Considerations
 
 You should be familiar with how the diffiehellman shared secret computation
-works. If not we recommend reading [New Directions In Cryptography](https://ee.stanford.edu/~hellman/publications/24.pdf).
+works. If not we recommend reading the [Diffie–Hellmen wikipedia article](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange).
 
 Remember the transformations of exponents:
 
