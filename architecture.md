@@ -13,10 +13,10 @@ such as message sizes, send and receive times et cetera.
 
 Let it be known that this metadata is in fact revealing enough that
 it's capture routinely results in human rights violations. It is very
-telling that Phillip Rogaway cites David Chaum's first mixnet paper
-(referred to as [Chaum81]) 13 times in his paper "The Moral Character
-of Cryptographic Works" where he tries to encourage academic
-cryptographers to do work that is socially relevant.
+telling that Phillip Rogaway cites [David Chaum's first mixnet paper](https://www.freehaven.net/anonbib/cache/chaum-mix.pdf)
+(referred to as [Chaum81]) 13 times in his paper ["The Moral Character
+of Cryptographic Works"](https://web.cs.ucdavis.edu/~rogaway/papers/moral-fn.pdf)
+where he tries to encourage academic cryptographers to do work that is socially relevant.
 
 Obviously everyone should be using mixnets in their communication.
 However it's worth mentioning that certain groups of people in
