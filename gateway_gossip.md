@@ -39,4 +39,31 @@ func gossipVerify(message *GossipMsg) error {
 }
 ```
 
-The `GetHost` function above retrieves the remote host's public key given it's network ID.
+The `GetHost` function above retrieves the remote host's public key
+given it's network ID.
+
+
+[xx_network:comms/gossip/gossip.proto](https://git.xx.network/xx_network/comms/-/blob/ba23bfbdce748e0dad29d27556e31a313c5328ba/gossip/gossip.proto)
+Defines a service and structures for the gossip protocol used by gateways:
+
+```
+// RPC for handling generic reception of Gossip messages
+service Gossip {
+    rpc Endpoint (GossipMsg) returns (Ack);
+    rpc Stream (stream GossipMsg) returns (Ack);
+}
+
+// Generic response message providing an error message from remote servers
+message Ack {
+    string Error = 1;
+}
+
+// Generic message used for a variety of Gossip protocols
+message GossipMsg {
+    string Tag = 1;
+    bytes  Origin = 2;
+    bytes  Payload = 3;
+    bytes  Signature = 4;
+    int64 timestamp = 5;
+}
+```
