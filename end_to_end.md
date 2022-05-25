@@ -586,3 +586,28 @@ func MakeMAC(key []byte, encryptedPayload []byte) []byte {
 	return mac
 }
 ```
+
+The message type for single use requests are defined like this:
+
+```
+type RequestPayload struct {
+	nonce            []byte
+	numRequestParts  []byte // Number of parts in the request, currently always 1
+	maxResponseParts []byte // Max number of messages expected in response
+	size             []byte // Size of the contents
+	contents         []byte
+}
+```
+
+In the above `RequestPayload` message type, the `contents` field is used to encapsulate
+the application specific payload. Likewise response use this message type:
+
+```
+type ResponsePart struct {
+	version  []byte // Version of the message
+	partNum  []byte // Index of message in a series of messages
+	maxParts []byte // The number of parts in this message.
+	size     []byte // Size of the contents
+	contents []byte // The encrypted contents
+}
+```
