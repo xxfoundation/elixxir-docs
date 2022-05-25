@@ -536,6 +536,14 @@ The client computes a diffiehellman shared secret:
 dh_key = DH(server_public_key, client_ephemeral_private_key)
 ```
 
+The client uses this KDF to derive a key for the message or first message part:
+
+```
+func NewRequestKey(dhKey []byte) []byte {
+	return H(dhKey | "singleUseTransmitKeySalt")
+}
+```
+
 The client then uses this KDF to derive a key for each message part, where
 each message part is enumerated by `keyNum`:
 
