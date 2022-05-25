@@ -55,6 +55,8 @@ hoped that this glossary will help you understand the pseudo code.
 
 * |: byte concatenation
 
+* HMAC(key, data): HMAC uses the given key to compute an HMAC over the given data.
+
 * H(x): H is a cryptographic hash function.
 
 * DH(my_private_key, partner_public_key):  
@@ -518,3 +520,61 @@ cMix payload capacity. Rekey messages cause metadata to be leaked
 because the receiving client always responds in a timely
 manner. Whereas in the future we should have rekey responses sent
 after some random time delay.
+
+## Single Use End to End Protocol
+
+The xx network's "single use" end to end protocol is a message
+oriented request and response protocol. We'll refer to these two
+roles as the client and server. In this protocol both the client
+and the server can send a message whose size is greater than the
+cMix packet payload size by sending multiple cMix packets where
+each cMix packet encapsulates one message part.
+
+The client computes a diffiehellman shared secret:
+
+```
+dh_key = DH(server_public_key, client_ephemeral_private_key)
+```
+
+The client then uses this KDF to derive a key for each message part, where
+each message part is enumerated by `keyNum`:
+
+```
+func NewRequestPartKey(dhKey []byte, keyNum uint64) []byte {
+	return H(dhKey | keyNum | "singleUseRequestKeySalt")
+}
+```
+
+The client also computes a message fingerprint, which is used as a salt value
+for encryption:
+
+```
+func NewRequestPartFingerprint(dhKey []byte, keyNum uint64) Fingerprint {
+	fp = H(dhKey | keyNum | "singleUseRequestFingerprintSalt")
+	// Set the first bit as zero to ensure everything stays in the group
+	fp[0] &= 0b01111111
+	return fp
+}
+```
+
+The resulting shared secret key is used by the client to encrypt
+the request message which encapsulate an application specific payload
+as well as the client's ephemeral public DH key, and the newly created
+ephemeral network identity.
+
+```
+func StreamEncrypt(key, nonce, message []byte) []byte {
+	return XORKeyStream(key, nonce, message)
+}
+```
+
+The client computes a MAC over the ciphertext:
+
+```
+func MakeMAC(key []byte, encryptedPayload []byte) []byte {
+	mac = HMAC(key, encryptedPayload | "singleUseMacSalt")
+	// Set the first bit as zero to ensure everything stays in the group
+	mac[0] &= 0b01111111
+	return mac
+}
+```
