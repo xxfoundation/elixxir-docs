@@ -523,12 +523,16 @@ after some random time delay.
 
 ## Single Use End to End Protocol
 
+![single use protocol ladder diagram](images/single_use_e2e_protocol.png)
+
 The xx network's "single use" end to end protocol is a message
 oriented request and response protocol. We'll refer to these two
 roles as the client and server. In this protocol both the client
 and the server can send a message whose size is greater than the
 cMix packet payload size by sending multiple cMix packets where
 each cMix packet encapsulates one message part.
+
+
 
 The client computes a diffiehellman shared secret:
 
