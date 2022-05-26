@@ -532,8 +532,6 @@ and the server can send a message whose size is greater than the
 cMix packet payload size by sending multiple cMix packets where
 each cMix packet encapsulates one message part.
 
-
-
 The client computes a diffiehellman shared secret:
 
 ```
@@ -590,6 +588,15 @@ func MakeMAC(key []byte, encryptedPayload []byte) []byte {
 	return mac
 }
 ```
+MAC verification is done like this:
+
+```
+func VerifyMAC(key []byte, encryptedPayload, receivedMAC []byte) bool {
+	newMAC := MakeMAC(key, encryptedPayload)
+
+	return bytes.Equal(newMAC, receivedMAC)
+}
+```
 
 The message type for single use requests are defined like this:
 
@@ -604,7 +611,24 @@ type RequestPayload struct {
 ```
 
 In the above `RequestPayload` message type, the `contents` field is used to encapsulate
-the application specific payload. Likewise response use this message type:
+the application specific payload.
+
+
+When the server receives such a request it calculates the shared secret and uses it to
+verify the MAC:
+
+```
+dh_key = DH(sender_public_key, server_private_key)
+key = NewRequestKey(dh_key)
+
+if VerifyMAC(key, request_payload, MAC) {
+	return errors.New("failed to verify MAC")
+}
+```
+
+If the MAC is veri
+
+The server replies with this message response type:
 
 ```
 type ResponsePart struct {
@@ -615,3 +639,4 @@ type ResponsePart struct {
 	contents []byte // The encrypted contents
 }
 ```
+
