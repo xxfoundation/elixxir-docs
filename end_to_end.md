@@ -555,7 +555,7 @@ func NewRequestPartKey(dhKey []byte, keyNum uint64) []byte {
 }
 ```
 
-The client also computes a message fingerprint, which is used as a salt value
+The client also computes a message fingerprint, which is used as a nonce value
 for encryption:
 
 ```
@@ -610,11 +610,9 @@ type RequestPayload struct {
 }
 ```
 
-In the above `RequestPayload` message type, the `contents` field is used to encapsulate
-the application specific payload.
-
-
-When the server receives such a request it calculates the shared secret and uses it to
+In the above `RequestPayload` message type, the `contents` field is
+used to encapsulate the application specific payload. When the server
+receives such a request it calculates the shared secret and uses it to
 verify the MAC:
 
 ```
@@ -626,9 +624,15 @@ if VerifyMAC(key, request_payload, MAC) {
 }
 ```
 
-If the MAC is veri
+If the MAC verifies then the message is decrypted:
 
-The server replies with this message response type:
+```
+decrypted_payload = StreamEncrypt(key, fingerprint, payload_ciphertext)
+```
+
+The decrypted payload is passed to the application which composes a
+response payload to be sent back to the client. The server replies
+with this message response type:
 
 ```
 type ResponsePart struct {
@@ -640,3 +644,33 @@ type ResponsePart struct {
 }
 ```
 
+The response keys are generated like this:
+
+```
+func NewResponseKey(dhKey []byte, keyNum uint64) []byte {
+	return H(dhKey | keyNumBytes | "singleUseResponseKeySalt")
+}
+```
+
+Response fingerprints which are used as encryption nonces are generated like this:
+
+```
+func NewResponseFingerprint(dhKey []byte, keyNum uint64) Fingerprint {
+	fp = H(dhKey | keyNum | "singleUseResponseFingerprintSalt")
+
+	// Set the first bit as zero to ensure everything stays in the group
+	fp[0] &= 0b01111111
+	return fp
+}
+```
+
+The server's response is encrypted:
+
+
+```
+ciphertext = StreamEncrypt(key, fingerprint, payload)
+```
+
+As with the client's request, if the server's response exceeds the
+cMix maximum message length then the message is divided into parts and
+each part is encrypted and sent in it's own cMix packet.
