@@ -602,11 +602,11 @@ The message type for single use requests are defined like this:
 
 ```
 type RequestPayload struct {
-	nonce            []byte
-	numRequestParts  []byte // Number of parts in the request, currently always 1
-	maxResponseParts []byte // Max number of messages expected in response
-	size             []byte // Size of the contents
-	contents         []byte
+	Nonce            []byte
+	NumRequestParts  []byte // Number of parts in the request, currently always 1
+	MaxResponseParts []byte // Max number of messages expected in response
+	Size             []byte // Size of the contents
+	Contents         []byte
 }
 ```
 
@@ -636,11 +636,11 @@ with this message response type:
 
 ```
 type ResponsePart struct {
-	version  []byte // Version of the message
-	partNum  []byte // Index of message in a series of messages
-	maxParts []byte // The number of parts in this message.
-	size     []byte // Size of the contents
-	contents []byte // The encrypted contents
+	Version  []byte // Version of the message
+	PartNum  []byte // Index of message in a series of messages
+	MaxParts []byte // The number of parts in this message.
+	Size     []byte // Size of the contents
+	Contents []byte // The encrypted contents
 }
 ```
 
