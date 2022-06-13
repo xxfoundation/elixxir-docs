@@ -1,6 +1,10 @@
 
 # The xx network End To End Cryptographic Protocol
 
+Ben Wenger  
+Rick Carback  
+David Stainton  
+
 ## Abstract
 
 Here we discuss some design details of the end to end cryptographic

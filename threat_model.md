@@ -1,6 +1,10 @@
 
 # Elixxir Mix Network Threat Model
 
+Ben Wenger  
+Rick Carback  
+David Stainton  
+
 ## Introduction
 
 As of this writing the Elixxir mixnet only has one application known

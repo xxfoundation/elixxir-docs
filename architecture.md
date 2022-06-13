@@ -1,6 +1,10 @@
 
 # Elixxir Mixnet Architectural Overview
 
+Ben Wenger  
+Rick Carback  
+David Stainton  
+
 ## Context for the Elixxir Mixnet
 
 Internet communications are in widespread use and many of these

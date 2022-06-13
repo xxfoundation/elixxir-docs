@@ -1,6 +1,10 @@
 
 # Elixxir Mixnet PKI
 
+Ben Wenger  
+Rick Carback  
+David Stainton  
+
 ## Introduction
 
 As mentioned in the [threat model](threat_model.md), the mixnet PKI

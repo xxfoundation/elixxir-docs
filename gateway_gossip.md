@@ -1,5 +1,9 @@
 # The xx network Gateway Gossip Protocol
 
+Ben Wenger  
+Rick Carback  
+David Stainton  
+
 ## Gateway Gossip Protocol Overview
 
 Gateways gossip bloom filters and ingress client message rate limits.

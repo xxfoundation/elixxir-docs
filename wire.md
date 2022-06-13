@@ -1,6 +1,9 @@
 
 # Elixxir mix network wire protocol
 
+Rick Carback  
+David Stainton  
+
 ## Abstract
 
 This document describes the Elixxir wire protocol which is the
