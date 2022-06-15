@@ -17,6 +17,9 @@ In order to participate in a channel a client must possess:
 2. channel description
 3. channel RSA public key
 
+Channels work similarly to a client receiver ID in that all messages sent to the proper
+ephemeral receiver ID can be read by all channel members.
+
 ## Symmetric Encrypted Channel Messages
 
 In our multicast channels, message pickup works the same as it does
