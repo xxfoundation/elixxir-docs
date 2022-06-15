@@ -76,11 +76,13 @@ CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
 
 ## Privacy Considerations
 
-Our multicast channels have just as much privacy protection for the channel senders
-but somewhat less protection for the channel senders. This is due to the nature
-of message pickup in the XX network. In order to retrieve the channel messages the
-receivers must contact one of the five gateways associated with the channel. A
-sufficiently global adversary who is given enough time may be able to determine
-if a given XX network client is receiving messages from one of the five gateways.
-However even for this specific situation there is still some defense due to the
-receiver ID collisions.
+Our multicast channels have just as much privacy protection for the
+channel senders as ordinary messaging with the mix network. However
+there is somewhat less protection for the channel senders. This is due
+to the nature of message pickup in the XX network. In order to
+retrieve the channel messages the receivers must contact one of the
+five gateways associated with the channel. A sufficiently global
+adversary who is given enough time may be able to determine if a given
+XX network client is receiving messages from one of the five gateways.
+However even for this specific situation there is still some defense
+due to the receiver ID collisions.
