@@ -50,15 +50,11 @@ per_message_key = KDF(key, nonce)
 
 ## Asymmetric Encrypted Channel Messages
 
-Note that in this design we use RSA-OAEP (Optimal Asymmetric Encryption Padding)
-which is [known to be secure against CCA2.](https://www.inf.pucrs.br/~calazans/graduate/TPVLSI_I/RSA-oaep_spec.pdf).
-CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
-However unlike ordinary asymetric encryption schemes, here the private key is
+Unlike ordinary asymetric encryption schemes, here the private key is
 used for encryption while the public key is used for decryption.
-
 Multicast channels use asymetric encryption such that only the channel
-admin may send policy messages to the channel. Only the channel admin
-is in possession of the channel's RSA private key:
+admin may send policy messages to the channel because only the channel admin
+is in possession of the channel's RSA private key which is used for encryption:
 
 ```
 cyphertext = E_asym(plaintext, RSA_private_key)
@@ -73,6 +69,18 @@ plaintext = D_asym(cyphertext, RSA_public_key)
 
 ## Security Considerations
 
-
+Note that in the design of asymetric encrypted channel messages we use RSA-OAEP
+(Optimal Asymmetric Encryption Padding) which is
+[known to be secure against CCA2.](https://www.inf.pucrs.br/~calazans/graduate/TPVLSI_I/RSA-oaep_spec.pdf).
+CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
 
 ## Privacy Considerations
+
+Our multicast channels have just as much privacy protection for the channel senders
+but somewhat less protection for the channel senders. This is due to the nature
+of message pickup in the XX network. In order to retrieve the channel messages the
+receivers must contact one of the five gateways associated with the channel. A
+sufficiently global adversary who is given enough time may be able to determine
+if a given XX network client is receiving messages from one of the five gateways.
+However even for this specific situation there is still some defense due to the
+receiver ID collisions.

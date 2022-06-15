@@ -132,7 +132,7 @@ in our [end to end protocol design document](end_to_end.md).
 
 ## Network Identities
 
-Network Identities in the xx network are composed of a 256 bit value
+Network Identities in the XX network are composed of a 256 bit value
 and 8 bit type. The types are as follows:
 
 * 0x00 Generic: Components which do not fit with other
