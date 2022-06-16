@@ -21,6 +21,37 @@ In order to participate in a channel a client must possess:
 Channels work similarly to a client receiver ID in that all messages sent to the proper
 ephemeral receiver ID can be read by all channel members.
 
+## Security Considerations
+
+Note that in the design of asymetric encrypted channel messages we use RSA-OAEP
+(Optimal Asymmetric Encryption Padding) which is
+[known to be secure against CCA2.](https://www.inf.pucrs.br/~calazans/graduate/TPVLSI_I/RSA-oaep_spec.pdf).
+CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
+
+## Privacy Considerations
+
+Our multicast channels have just as much privacy protection for the
+channel senders as ordinary messaging with the mix network. However
+there is somewhat less protection for the channel receivers. This is due
+to the nature of message pickup in the XX network. In order to
+retrieve the channel messages the receivers must contact one of the
+five gateways associated with the channel. A sufficiently global
+adversary who is given enough time may be able to determine if a given
+XX network client is receiving messages from one of the five gateways.
+However even for this specific situation there is still some defense
+due to the receiver ID collisions.
+
+![mixnet diagram](images/channel_traffic_analysis.png)
+
+In the above diagram we abstract away all the details of the mixnet
+and show it as a single mix or route with input messages coming from
+clients on the left and output messages going to gateways on the right.
+Each gateway on the right is representative of the five gateways belonging
+to a given mix cascade. Senders to a channel are protected from traffic analysis
+by the mixnet. However, the receivers of channel messages must contact the
+gateways corresponding to the channel. Client interactions with the gateways
+for message pickup do not currently have any protection from traffic analysis.
+
 ## Symmetric Encrypted Channel Messages
 
 All participants in a channel encrypt messages with the same symmetric key.
@@ -78,22 +109,3 @@ RSA public key and can therefore decrypt these policy messages:
 plaintext = D_asym(cyphertext, RSA_public_key)
 ```
 
-## Security Considerations
-
-Note that in the design of asymetric encrypted channel messages we use RSA-OAEP
-(Optimal Asymmetric Encryption Padding) which is
-[known to be secure against CCA2.](https://www.inf.pucrs.br/~calazans/graduate/TPVLSI_I/RSA-oaep_spec.pdf).
-CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
-
-## Privacy Considerations
-
-Our multicast channels have just as much privacy protection for the
-channel senders as ordinary messaging with the mix network. However
-there is somewhat less protection for the channel receivers. This is due
-to the nature of message pickup in the XX network. In order to
-retrieve the channel messages the receivers must contact one of the
-five gateways associated with the channel. A sufficiently global
-adversary who is given enough time may be able to determine if a given
-XX network client is receiving messages from one of the five gateways.
-However even for this specific situation there is still some defense
-due to the receiver ID collisions.
