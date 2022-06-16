@@ -16,26 +16,35 @@ In order to participate in a channel a client must possess:
 1. channel name
 2. channel description
 3. channel RSA public key
+4. salt2
 
 Channels work similarly to a client receiver ID in that all messages sent to the proper
 ephemeral receiver ID can be read by all channel members.
 
 ## Symmetric Encrypted Channel Messages
 
-In our multicast channels, message pickup works the same as it does
-for a single client identity. However, every participant in the
-channel knows the channel information which includes the channel's
-information necessary to derive the symmetric key which is used for
-encryption and decryption of messages.
+All participants in a channel encrypt messages with the same symmetric key.
+Message pickup works the same as it does for a single client identity.
+Every participant in the channel know the information necessary to derive the
+symmetric key which is used for encryption and decryption of messages.
 
-It may be helpful to read our [message pickup design document](message_pickup.md)
-as channels work in much the same way for generating sender and
-ephemeral recipient network IDs.
-
-The salt used to compute the network ID:
+If you recall from our [message pickup design document](message_pickup.md)
+reception IDs are computed by hashing the recipient's RSA public key, salt and type
+whereas for channels we first must compute the salt value by hashing the
+channel name, channel description and salt2 values:
 
 ```
 salt = H(salt2 | name | description)
+value = H(channel_rsa_public_key | salt)
+channel_reception_id = value | 0x03
+```
+
+A sender to a channel computes their sender ID just as is described in our
+[message pickup design document](message_pickup.md):
+
+```
+value = H(rsa_public_key | salt)
+sender_id = value | 0x03
 ```
 
 The channel symmetric key is computed from the sender ID: 
@@ -44,12 +53,11 @@ The channel symmetric key is computed from the sender ID:
 key = KDF(sender_ID, "symmetricBroadcastChannelKey")
 ```
 
-And the per message key is computed like this:
+And the 32 byte per message keys are computed like this:
 
 ```
-per_message_key = KDF(key, nonce)
+per_message_key = HKDF_Blake2b(key, nonce)
 ```
-
 
 ## Asymmetric Encrypted Channel Messages
 
@@ -81,7 +89,7 @@ CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
 
 Our multicast channels have just as much privacy protection for the
 channel senders as ordinary messaging with the mix network. However
-there is somewhat less protection for the channel senders. This is due
+there is somewhat less protection for the channel receivers. This is due
 to the nature of message pickup in the XX network. In order to
 retrieve the channel messages the receivers must contact one of the
 five gateways associated with the channel. A sufficiently global
