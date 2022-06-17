@@ -141,6 +141,35 @@ RSA public key and can therefore decrypt these policy messages:
 plaintext = D_asym(cyphertext, RSA_public_key)
 ```
 
+## Admin Commands
+
+The asymmetric encrypted messages described above are used to encapsulate
+admin channel commands which shall be JSON encoded. Here are the commands
+as a Golang struct:
+
+```
+type AdminCommand struct {
+	RoleAssignment struct{
+		RoleType string,
+		Username string,
+		ECCPublicKey []byte,
+	},
+	MuteUser struct{
+		Username string,
+	},
+    IgnoreMessage struct{
+	    Nonce []byte,
+	},
+}
+```
+
+## Rebroadcasting Admin Commands
+
+Messages sent to a channel are stored for 3 weeks in gateway storage.
+Therefore the admin commands described above only have an effect for up to 3 weeks.
+Rebroadcasting admin commands solves this problem.
+
+
 ## Security Considerations
 
 Note that in the design of asymetric encrypted channel messages we use RSA-OAEP
