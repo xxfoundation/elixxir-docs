@@ -34,15 +34,16 @@ The last mix node sends the message to it's Gateway.
 
 This transport protocol does not require all communication parties to
 be online at the same time. Messages are queued for up to two weeks in
-the gateway persistent message storage.
+the gateway persistent message storage.  Later on, the recipient
+client can retrieve their messages by interacting with any of the
+gateways. Each gateway stores a KnownRounds buffer indicating for each
+round if they store messages for that round or not.
 
-Later on, the recipient client can retrieve their messages by
-interacting with any of the gateways and querying the proper
-message IDs. These message IDs are generated deterministically
-by the sender and recipient clients such that there are many
-message ID collisions with other clients. When clients query
-for messages the gateways sends a bloom filter which the clients
-use to determine which the message IDs of messages persisted.
+These message IDs are generated deterministically by the sender and
+recipient clients such that there are many message ID collisions with
+other clients. When clients query for messages the gateways sends a
+bloom filter which the clients use to determine which the message IDs
+of messages persisted.
 
 The gateway nodes also have support for a plugin system so additional
 mixnet services may be added. That is, instead of delivering a message
@@ -229,10 +230,6 @@ fingerprint field. The fingerprint field is used in one of two ways to
 find the proper decryption key.
 
 ## Match by Message Fingerprint
-
-Clients keep track of their fingerprints to key
-mappings so that they can later match keys for decryption of received
-messages.
 
 Clients store a mapping from fingerprints to keys so that later they can
 look up a key based on it's mapped association with a given message fingerprint.
