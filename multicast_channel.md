@@ -102,7 +102,7 @@ In response a user discovery validation signature and lease is sent to the clien
 ```
 response = ChannelMembershipRegistrationResponse{
 	ValidationSignature: sign(registration_private_RSA_key, request | lease),
-	Lease: lease,
+	UsernameLease: lease,
 }
 ```
 
@@ -114,7 +114,8 @@ channel key to derive the per message key as describe in the previous section.
 ```
 message = ChannelMessage{
 	Username: username,
-	Lease: lease,
+	ECCPublicKey []byte
+	UsernameLease: lease,
 	RoundID: roundID,
 	Payload: payload,
 }
@@ -149,19 +150,43 @@ as a Golang struct:
 
 ```
 type AdminCommand struct {
-	RoleAssignment struct{
-		RoleType string,
-		Username string,
-		ECCPublicKey []byte,
+	CreateRole struct {
+		Name string,
+		Members []string,
+		Commands []string
 	},
+	DeleteRole struct {
+		Rolename string,
+	},
+	EditPermissions struct [
+		Username string,
+		Commands []string
+	}
 	MuteUser struct{
 		Username string,
 	},
     IgnoreMessage struct{
-	    Nonce []byte,
+	    MessageID []byte,
 	},
 }
 ```
+
+* IgnoreMessage
+
+The MessageID field of the IgnoreMessage command is computed as follows:
+
+```
+messageID = H(roundID | payload)
+```
+
+alternatively we could hash the entire `ChannelMessage`:
+
+```
+messageID = H(message)
+```
+
+since `ChannelMessage` encapsulates both `Payload` and `RoundID`.
+
 
 ## Rebroadcasting Admin Commands
 
@@ -174,7 +199,7 @@ Rebroadcasting admin commands solves this problem.
 
 Note that in the design of asymetric encrypted channel messages we use RSA-OAEP
 (Optimal Asymmetric Encryption Padding) which is
-[known to be secure against CCA2.](https://www.inf.pucrs.br/~calazans/graduate/TPVLSI_I/RSA-oaep_spec.pdf).
+[known to be secure against CCA2.](https://www.inf.pucrs.br/~calazans/graduate/TPVLSI_I/RSA-oaep_spec.pdf)
 CCA2 implies ciphertext non-maleability and ciphertext indistinguishability.
 
 ## Privacy Considerations
