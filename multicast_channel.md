@@ -111,16 +111,24 @@ several other fields are included. The RoundID prevents replay attacks. The vali
 proves their registration as long as the lease is still valid. The nonce is used along with the
 channel key to derive the per message key as describe in the previous section.
 
+
 ```
-message = ChannelMessage{
+type ChannelMessage struct {
+		RoundID: roundID,
+		Payload: payload,
+}
+
+type UserMessage struct {
+	ChannelMessage
+	
 	Username: username,
 	ECCPublicKey []byte
 	UsernameLease: lease,
-	RoundID: roundID,
-	Payload: payload,
 }
 
-channel_message_data_to_send = nonce | E(channel_per_message_key, message | sign(ecc_private_key, message) | validationSignature)
+channel_message_data_to_send = E(channel_per_message_key, message | sign(ecc_private_key, message) | validationSignature)
+
+// nonce gets sent in the cMix fingerprint field. It is needed to decrypt.
 ```
 
 ## Asymmetric Encrypted Channel Messages
@@ -145,25 +153,19 @@ plaintext = D_asym(cyphertext, RSA_public_key)
 ## Admin Commands
 
 The asymmetric encrypted messages described above are used to encapsulate
-admin channel commands which shall be JSON encoded. Here are the commands
+admin channel commands which shall be CBOR encoded. Here are the commands
 as a Golang struct:
 
 ```
 type AdminCommand struct {
-	CreateRole struct {
-		Name string,
-		Members []string,
-		Commands []string
-	},
-	DeleteRole struct {
-		Rolename string,
-	},
+	LeasePeriod time.Duration
+	
 	EditPermissions struct [
-		Username string,
+		ECCPublicKey []byte,
 		Commands []string
 	}
 	MuteUser struct{
-		Username string,
+		ECCPublicKey []byte,	
 	},
     IgnoreMessage struct{
 	    MessageID []byte,
