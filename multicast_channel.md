@@ -40,6 +40,28 @@ to the channel by that entity. If an entity who is a member of a channel never
 sends a message to the channel then the other members of the channel cannot know
 of that entities channel membership.
 
+
+### Pseudo Code Cryptographic Function Glossary
+
+The following sections are populated with pseudo code examples which
+are used to explain sections of our cryptographic protocols. It is
+hoped that this glossary will help you understand the pseudo code.
+
+* |: byte concatenation
+
+* H(x): H is a cryptographic hash function.
+
+* E(key, payload): Stream-cipher encrypt payload.
+
+* D(key, payload): Stream-cipher decrypt payload.
+
+* Sign(private_key, payload): Returns a cryptographic signature.
+
+* Verify(public_key, data, signature): Returns a boolean which will be
+  true if the `signature` is a signature of `data` and is valid for the
+  given public key.
+
+
 ## Symmetric Encrypted Channel Messages
 
 All participants in a channel encrypt messages with the same symmetric key.
@@ -140,14 +162,14 @@ admin may send policy messages to the channel because only the channel admin
 is in possession of the channel's RSA private key which is used for encryption:
 
 ```
-cyphertext = E_asym(plaintext, RSA_private_key)
+cyphertext = E_asym(RSA_private_key, plaintext)
 ```
 
 The channel members by definition are in possession of the channel's
 RSA public key and can therefore decrypt these policy messages:
 
 ```
-plaintext = D_asym(cyphertext, RSA_public_key)
+plaintext = D_asym(RSA_public_key, cyphertext)
 ```
 
 ## Admin Commands
@@ -160,11 +182,11 @@ as a Golang struct:
 type AdminCommand struct {
 	LeasePeriod time.Duration
 	
-	EditPermissions struct [
+   	UpdatePermissions struct {
 		ECCPublicKey []byte,
 		Commands []string
 	}
-	MuteUser struct{
+   	MuteUser struct{
 		ECCPublicKey []byte,	
 	},
     IgnoreMessage struct{
@@ -190,12 +212,126 @@ messageID = H(message)
 since `ChannelMessage` encapsulates both `Payload` and `RoundID`.
 
 
+
+```
+adminMessage = E_asym(userMessage, RSA_private_key)
+
+channel_message_ciphertext = E(per_message_key, ecc_public_key | ecc_signature | payload)
+
+// where payload can consist of either of these:
+
+type ChannelMessage struct {
+		RoundID: roundID,
+		Payload: payload,
+}
+
+type UserMessage struct {
+	ChannelMessage
+	
+	Username: username,
+	ECCPublicKey []byte
+	UsernameLease: lease,
+}
+
+type ReplayCommand struct {
+	Payload []byte
+	ECCPublicKey []byte
+	Signature []byte
+	RID RoundID
+	Lease []byte
+}
+```
+
 ## Rebroadcasting Admin Commands
 
-Messages sent to a channel are stored for 3 weeks in gateway storage.
-Therefore the admin commands described above only have an effect for up to 3 weeks.
-Rebroadcasting admin commands solves this problem.
+Among the `AdminCommands` described above it should be obvious that some
+of these commands modify the state of the channel. However thus far in our
+design description we've only been storing channel state in the temporary
+Gateway storage that only stores things for up to three weeks. If we want
+any channel state to last longer than three weeks we need to store this state
+in the clients, perhaps only specific admin clients. Later, these clients can
+rebroadcast these state changes to the channel after they have been erased
+from the temporary storage. Since every message is removed in three weeks,
+there is no need to rebroadcast the `IgnoreMessage` command. However `MuteUser`
+and `UpdatePermissions` should be rebroadcast if you want their channel
+state changes to persist longer than three weeks.
 
+The entity performing the rebroadcasting should of course rebroadcast the
+admin's command which bestows said entity's authority to perform rebroadcasting:
+
+```
+// previously acquired admin ciphertext
+admin_ciphertext = E_asym(RSA_private_key, AdminCommand{
+	UpdatePermissions {
+	   	ECCPublicKey: bob_ecc_pub_key,
+		Commands []string{"MuteUser"},
+	}
+})
+	
+replayCommand = ReplayCommand{
+	Payload: admin_ciphertext,
+	EccPublicKey: bob_ecc_pub_key,
+	Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
+	RID: roundID,
+	Lease: lease,	
+}
+	
+toSend = E(per_message_key, replayCommand)
+```
+
+The combination of a `ReplayCommand` which encapsulates an `UpdatePermissions`
+admin command indicates a case where the inner payload must be authenticated
+before the outer payload whereas the opposite evaluation order is used in all
+other cases of commands.
+
+Here's an example of a how we compose the replay payload such that it
+replays a `MuteUser` which was initially sent by a moderator, a client
+whose ECC public key was bestowed the authority to use the `MuteUser`
+command via the admin command `UpdatePermissions`:
+
+```
+	muteUserCommand = MuteUser{
+		LeasePeriod: lease,
+		ECCPublicKey: mallorys_ecc_pub_key,
+	},
+
+	replayCommand = ReplayCommand{
+		Payload: muteUserCommand,
+		EccPublicKey: bob_ecc_pub_key,
+		Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
+		RID: roundID,
+		Lease: lease,	
+	}
+	
+	toSend = E(per_message_key, replayCommand)
+```
+
+However take note that replaying a `MuteUser` command will only be successfully evaluated
+by the channel clients if the encapsulating `ReplayCommand` contains a signature which
+is signed by an ECC key that has previously been added to the channel state via an
+`UpdatePermissions` admin command. And of course that UpdatePermissions command's `Command`
+field must contain the string "ReplayCommand".
+
+The `ReplayCommand` can also be used to encapsulate a RSA encrypted admin command:
+
+```
+	// previously acquired admin ciphertext
+	admin_ciphertext = E_asym(RSA_private_key, AdminCommand{
+		MuteUser struct{
+			mallorys_public_ecc_key,
+		},
+	})
+
+	replayCommand = ReplayCommand{
+		Payload: admin_ciphertext,
+		EccPublicKey: bob_ecc_pub_key,
+		Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
+		RID: roundID,
+		Lease: lease,	
+	}
+	
+	toSend = E(per_message_key, replayCommand)
+```
 
 ## Security Considerations
 
