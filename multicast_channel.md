@@ -228,7 +228,7 @@ type ChannelMessage struct {
 type UserMessage struct {
 	ChannelMessage
 	
-	Username: username,
+	Username: string,
 	ECCPublicKey []byte
 	UsernameLease: lease,
 }
@@ -263,8 +263,8 @@ admin's command which bestows said entity's authority to perform rebroadcasting:
 // previously acquired admin ciphertext
 admin_ciphertext = E_asym(RSA_private_key, AdminCommand{
 	UpdatePermissions {
-	   	ECCPublicKey: bob_ecc_pub_key,
-		Commands []string{"MuteUser"},
+		ECCPublicKey: bob_ecc_pub_key,
+		Commands []string{"ReplayCommand"},
 	}
 })
 	
@@ -282,21 +282,35 @@ toSend = E(per_message_key, replayCommand)
 The combination of a `ReplayCommand` which encapsulates an `UpdatePermissions`
 admin command indicates a case where the inner payload must be authenticated
 before the outer payload whereas the opposite evaluation order is used in all
-other cases of commands.
+other cases of commands. If the admin's RSA ciphertext is properly decrypted
+with the RSA public key for the channel, then the `ECCPublicKey` field of the
+`UpdatePermissions` command is used to populate the client's book keeping regarding
+ECC public keys belonging to entities which are permitted to use the specified
+command, in this case the `ReplayCommand`. After that initial check the client
+must next check that the `ReplayCommand` itself has a valid `Signature` field
+which signs the encapsulated payload, the RSA encrypted `UpdatePermissions` command.
 
 Here's an example of a how we compose the replay payload such that it
 replays a `MuteUser` which was initially sent by a moderator, a client
 whose ECC public key was bestowed the authority to use the `MuteUser`
-command via the admin command `UpdatePermissions`:
+command via the previous admin command `UpdatePermissions`:
 
 ```
-	muteUserCommand = MuteUser{
+	mute_user_command = MuteUser{
 		LeasePeriod: lease,
 		ECCPublicKey: mallorys_ecc_pub_key,
-	},
+	}
+
+	userMessage = UserMessage{
+		RoundID: roundID,
+		Payload: mute_user_command,
+		ECCPublicKey: bob_ecc_pub_key,
+		Username: "BobbyShaftoe",
+		UsernameLease: username_lease,
+	}
 
 	replayCommand = ReplayCommand{
-		Payload: muteUserCommand,
+		Payload: userMessage,
 		EccPublicKey: bob_ecc_pub_key,
 		Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
 		RID: roundID,
