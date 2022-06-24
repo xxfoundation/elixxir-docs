@@ -16,7 +16,7 @@ In order to participate in a channel a client must possess:
 1. channel name
 2. channel description
 3. channel RSA public key
-4. salt2
+4. salt (a salt value referred to as salt2 below)
 
 Channels work similarly to a client receiver ID in that all messages sent to the proper
 ephemeral receiver ID can be read by all channel members.
