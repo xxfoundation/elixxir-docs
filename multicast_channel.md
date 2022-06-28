@@ -177,7 +177,6 @@ for details about the cMix message format.
 type ChannelMessage struct {
 	Lease:   time.Duration,
 	RoundID: roundID,
-	PayloadType: uint,
 	Payload: []byte,
 }
 ```
@@ -194,6 +193,16 @@ and is extended as a `UserMessage` in a later section.
    of time after the round the message was delivered that the message
    is valid for. Exactly what the lease means is dependent upon the
    specific payload type.
+
+The `ChannelMessage` also provides unique message IDs which can be used throughout
+the protocol and we compute them by hashing the entire `ChannelMessage`:
+
+```
+messageID = H(channelMessage)
+```
+
+The collision resistance of the hash guarantees the uniqueness of the message ID.
+
 
 ### Message Encryption
 
@@ -282,9 +291,9 @@ type UserMessage struct {
 	ChannelMessage
 	
 	ValidationSignature: []byte,
-	Signature: []byte
-	Username: username,
-	ECCPublicKey []byte
+	Signature: []byte,
+	Username: string,
+	ECCPublicKey: []byte,
 	UsernameLease: lease,
 }
 
@@ -302,92 +311,178 @@ produces this signature by signing the username, lease and the user's
 ECC public key. It is assumed that all XX network clients know the
 user discovery public key so that they can validate such signatures.
 
+Here's an example of how a channel user composes a channel message
+containing a `MuteUser` command:
+
+```
+channel_message = ChannelMessage{
+	Lease: lease_one_week_in_nano_secs,
+	RoundID: roundID,
+	Payload: MuteUser{
+		LeaseEnd: time.Now() + (time.Day * 7), // one week from now
+		ECCPublicKey: bad_user_pub_key,	
+	},
+}
+channel_message_ciphertext = E(per_message_key, nonce, channel_message)
+```
 
 ## Admin Commands
 
-The asymmetric encrypted messages described above are used to encapsulate
-admin channel commands which shall be CBOR encoded. Here are the commands
-as a Golang struct:
+Admin commands are commands sent by the admin or another authorized
+user (see section below for details); These commands change the state
+of the channel. All admin commands have a maximum lease of three weeks
+which is the Gateway message rentention duration. Commands can
+potentially change channel state for longer than this if they are
+rebroadcasted by another client (see section below).
+
+All admin commands are encapsulated within the `ChannelMessage` message type
+which was described above in the Message Encapsulation section.
+
+Here are the admin commands as a Golang struct:
 
 ```
-type UpdatePermissions struct {
-	ECCPublicKey []byte,
-   	Commands []string
-}
-
 type MuteUser struct{
+	LeaseEnd time.Time
 	ECCPublicKey []byte,	
 }
 
-IgnoreMessage struct{
+type IgnoreMessage struct{
 	MessageID []byte,
 }
 
-PinMessage struct{}
-```
-
-* IgnoreMessage
-
-The MessageID field of the IgnoreMessage command is computed as follows:
-
-```
-messageID = H(roundID | payload)
-```
-
-alternatively we could hash the entire `ChannelMessage`:
-
-```
-messageID = H(message)
-```
-
-since `ChannelMessage` encapsulates both `Payload`, `RoundID` and `Lease`.
-
-
-```
-adminMessage = E_asym(userMessage, RSA_private_key)
-
-channel_message_ciphertext = E(per_message_key, ecc_public_key | ecc_signature | payload)
-
-// where payload can consist of either of these:
-
-
-type UserMessage struct {
-	ChannelMessage
-	
-	Username: string,
-	ECCPublicKey []byte
-	UsernameLease: lease,
+type PinMessage struct{
+	LeaseEnd time.Time
+   	MessageType uint
+	MessagePayload []byte
 }
 
-type ReplayCommand struct {
-	Payload []byte
-	ECCPublicKey []byte
-	Signature []byte
-	RID RoundID
-	Lease []byte
+type Revoke struct{
+	MessageID []byte,
 }
+
+type UpdatePermissions struct {
+	LeaseEnd time.Time
+	ECCPublicKey []byte,
+   	Commands []string,
+}
+```
+
+The `LeaseEnd` field is only used by the rebroadcasting client (see more
+details about the rebroadcasting client below).
+The `LeaseEnd` field describes when the command is no longer valid.
+If it is set to a time in the future beyond three weeks then
+rebroadcasting the command will be necessary to enforce the
+lease. Without any rebroadcasting the `LeaseEnd` whose value is
+greater than three weeks has no affect on clients. The `LeaseEnd`
+whose value is greater than three weeks is essentially an indication
+that a command should be rebroadcast periodically to the channel by a
+specialized rebroadcasting client.
+
+* MuteUser - `MuteUser` command is used to tell all the channel
+clients to ignore messages sent by the specified user. `MuteUser`
+instructs all the channel members to not display messages from the
+muted user.  This command is valid for all messages from the
+designated user in rounds who's `RoundID` is numerically larger than the
+`RoundID` of the round the `MuteUser` command was sent in and who's
+Round timestamp is before the `MuseUser` `Lease` plus the round
+timestamp of the round `MuseUser` was sent in.
+
+* IgnoreMessage - `IgnoreMessage` command causes members of the channel to ignore
+the specified message. This only applies to message which do not contain admin commands.
+
+* PinMessage - `PinMessage` command causes channel clients to display the
+pinned messages first.  If the `Lease` specified is beyond three weeks
+after it's transmition then the `MessagePayload` can be used by a
+rebroadcasting client to rebroadcast the pinned message.
+
+* Revoke - `Revoke` command causes members of the channel to ignore the specified message.
+This command only applies to messages which contain admin commands.
+`Revoke` is only valid for commands issued by the admin issuing the `Revoke` command.
+
+* UpdatePermissions - `UpdatePermissions` command can be used by the
+admin to grant permission to execute admin commands by the user
+designated by the specified ECC public key. At initial launch
+`UpdatePermissions` will not be able to grant permission to run the
+`UpdatePermissions` command.
+
+### Admin Command Example
+
+Here's an example of how a channel admin would formulate their message
+in order to mute a specific user:
+
+```
+channel_message = ChannelMessage{
+	Lease: lease_one_week_in_nano_secs,
+	RoundID: roundID,
+	Payload: MuteUser{
+		LeaseEnd: time.Now() + (time.Day * 7), // one week from now
+		ECCPublicKey: bad_user_pub_key,	
+	},
+}
+channel_message_ciphertext = E_asym(RSA_private_key, channel_message)
+```
+
+Here's an example of how a channel moderator would formulate their message
+in order to mute a specific user:
+
+```
+channel_message = UserMessage{
+	Lease: lease_one_week_in_nano_secs,
+	RoundID: roundID,
+	Payload: MuteUser{
+		LeaseEnd: time.Now() + (time.Day * 7), // one week from now
+		ECCPublicKey: bad_user_pub_key,	
+	},
+	ValidationSignature: validation_sig,
+	Username: "moderator",
+	ECCPublicKey: moderator_pub_key,
+	UsernameLease: one_month,
+}
+
+channel_message_data_to_send = E(per_message_key, channel_message)
 ```
 
 ## Rebroadcasting Admin Commands
 
-Among the `AdminCommands` described above it should be obvious that some
-of these commands modify the state of the channel. However thus far in our
-design description we've only been storing channel state in the temporary
-Gateway storage that only stores things for up to three weeks. If we want
-any channel state to last longer than three weeks we need to store this state
-in the clients, perhaps only specific admin clients. Later, these clients can
-rebroadcast these state changes to the channel after they have been erased
-from the temporary storage. Since every message is removed in three weeks,
-there is no need to rebroadcast the `IgnoreMessage` command. However `MuteUser`
-and `UpdatePermissions` should be rebroadcast if you want their channel
-state changes to persist longer than three weeks.
+The `AdminCommands` described above modify channel state as it is
+conceived by each client. The channel state cannot persist in the XX
+network's Gateway message queues because they are expunged every three
+weeks. However the `Revoke` and `IgnoreMessage` commands do not need
+to be rebroadcast.
+
+```
+type ReplayCommand {
+    Payload []byte 
+}
+```
+
+If a channel admin issues a `MuteUser` command with a `LeaseEnd` time
+specified beyond the three week message storage period it must be
+rebroadcast. Assuming there is a rebroadcasting client member of the
+channel, it would rebroadcast the command like this:
+
+```
+muteUser = MuteUser{
+   LeaseEnd: long_time_from_now,
+   ECCPublicKey: naughty_user_ecc_pub_key,
+}
+
+admin_ciphertext = E_asym(RSA_private_key, )
+
+
+replayCommand = ReplayCommand{
+	Command: admin_ciphertext,
+		
+}
+```
+
 
 The entity performing the rebroadcasting should of course rebroadcast the
 admin's command which bestows said entity's authority to perform rebroadcasting:
 
 ```
 // previously acquired admin ciphertext
-admin_ciphertext = E_asym(RSA_private_key, AdminCommand{
+admin_ciphertext = E_asym(RSA_private_key, FUBAR{
 	UpdatePermissions {
 		ECCPublicKey: bob_ecc_pub_key,
 		Commands []string{"ReplayCommand"},
@@ -404,6 +499,10 @@ replayCommand = ReplayCommand{
 	
 toSend = E(per_message_key, replayCommand)
 ```
+
+
+
+
 
 The combination of a `ReplayCommand` which encapsulates an `UpdatePermissions`
 admin command indicates a case where the inner payload must be authenticated
@@ -472,6 +571,42 @@ The `ReplayCommand` can also be used to encapsulate a RSA encrypted admin comman
 	
 	toSend = E(per_message_key, replayCommand)
 ```
+
+
+
+
+
+
+```
+adminMessage = E_asym(userMessage, RSA_private_key)
+
+channel_message_ciphertext = E(per_message_key, ecc_public_key | ecc_signature | payload)
+
+// where payload can consist of either of these:
+
+
+type UserMessage struct {
+	ChannelMessage
+	
+	Username: string,
+	ECCPublicKey []byte
+	UsernameLease: lease,
+}
+
+type ReplayCommand struct {
+	Payload []byte
+	ECCPublicKey []byte
+	Signature []byte
+	RID RoundID
+	Lease []byte
+}
+```
+
+
+
+
+
+
 
 ## Security Considerations
 
