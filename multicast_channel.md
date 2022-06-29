@@ -485,8 +485,7 @@ channel, it would rebroadcast the command like this:
 
 ```
 replayCommand = ReplayCommand{
-	Payload: admin_ciphertext,
-		
+	Payload: admin_ciphertext,	
 }
 
 channel_message = ChannelMessage{
@@ -494,11 +493,13 @@ channel_message = ChannelMessage{
 	RoundID: roundID,
 	Payload: replayCommand,
 }
+
 user_message = UserMessage {
 	Username: "Rebroadcastor",
 	ECCPublicKey: rebroadcastor_ecc_public_key,
 	Signature: sign(rebroadcastor_ecc_private_key, alice_channel_message),
 }
+
 user_message.ChannelMessage = channel_message
 
 channel_message_data_to_send = E(per_message_key, nonce, user_message)
@@ -520,15 +521,27 @@ channel_message = ChannelMessage{
 }
 admin_ciphertext = E_asym(RSA_private_key, channel_message)
 
-replayCommand = ReplayCommand{
+replay_command = ReplayCommand{
 	Payload: admin_ciphertext,
-	EccPublicKey: bob_ecc_pub_key,
-	Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
-	RID: roundID,
-	Lease: lease,	
 }
-	
-toSend = E(per_message_key, nonce, replayCommand)
+
+replay_channel_message = ChannelMessage struct {
+	Lease:   lease,
+	RoundID: roundID,
+	Payload: replay_command,
+}
+
+replay_user_message = UserMessage{
+	ValidationSignature: replayor_validation_sig,
+	Signature: sign(replayor_ecc_priv_key, replay_channel_message),
+	ECCPublicKey: replayor_ecc_pub_key,
+   	Username: "thereplayor",
+   	UsernameLease: replayor_lease,
+}
+
+replay_user_message.ChannelMessage = replay_channel_message
+
+toSend = E(per_message_key, nonce, replay_user_message)
 ```
 
 The combination of a `ReplayCommand` which encapsulates an `UpdatePermissions`
@@ -566,17 +579,30 @@ userMessage = UserMessage{
    	Username: "themoderator",
    	UsernameLease: username_lease,
 }
+
 userMessage.ChannelMessage = channel_message
 
 replayCommand = ReplayCommand{
    	Payload: userMessage,
-   	EccPublicKey: rebroadcastor_ecc_pub_key,
-   	Signature: Sign(rebroadcastor_ecc_priv_key, userMessage),
-   	RID: roundID,
-   	Lease: lease,	
 }
-	
-toSend = E(per_message_key, replayCommand)
+
+replay_channel_message = ChannelMessage struct {
+	Lease:   replay_lease,
+	RoundID: replay_roundID,
+	Payload: replay_command,
+}
+
+replay_user_message = UserMessage{
+	ValidationSignature: replay_validation_sig,
+	Signature: sign(replay_ecc_priv_key, replay_channel_message),
+	ECCPublicKey: replay_ecc_pub_key,
+   	Username: "thereplayor",
+   	UsernameLease: replayor_lease,
+}
+
+replay_user_message.ChannelMessage = replay_channel_message
+
+toSend = E(per_message_key, replay_user_message)
 ```
 
 However take note that replaying a `MuteUser` command will only be successfully evaluated
@@ -601,11 +627,26 @@ channel_message = ChannelMessage{
 
 admin_ciphertext = E_asym(RSA_private_key, channel_message)
 
-replayCommand = ReplayCommand{
+replay_command = ReplayCommand{
 	Payload: admin_ciphertext,
 }
 
-toSend = E(per_message_key, nonce, replayCommand)
+replay_channel_message = ChannelMessage struct {
+	Lease:   my_lease,
+	RoundID: my_roundID,
+	Payload: replay_command,
+}
+
+relay_userMessage = UserMessage{
+	ValidationSignature: rebroadcastor_validation_sig,
+	Signature: sign(rebroadcastor_ecc_priv_key, channel_message),
+	ECCPublicKey: rebroadcastor_ecc_pub_key,
+   	Username: "therebroadcastor",
+   	UsernameLease: rebroadcastor_lease,
+}
+userMessage.ChannelMessage = replay_channel_message
+
+toSend = E(per_message_key, nonce, userMessage)
 ```
 
 ## Security Considerations
