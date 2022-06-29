@@ -637,16 +637,16 @@ replay_channel_message = ChannelMessage struct {
 	Payload: replay_command,
 }
 
-relay_userMessage = UserMessage{
+replay_user_message = UserMessage{
 	ValidationSignature: rebroadcastor_validation_sig,
 	Signature: sign(rebroadcastor_ecc_priv_key, channel_message),
 	ECCPublicKey: rebroadcastor_ecc_pub_key,
    	Username: "therebroadcastor",
    	UsernameLease: rebroadcastor_lease,
 }
-userMessage.ChannelMessage = replay_channel_message
+replay_user_message.ChannelMessage = replay_channel_message
 
-toSend = E(per_message_key, nonce, userMessage)
+toSend = E(per_message_key, nonce, replay_user_message)
 ```
 
 ## Security Considerations
