@@ -302,7 +302,7 @@ channel_message_data_to_send = E(channel_per_message_key, user_message)
 
 The `UserMessage` message type is meant to authenticate the message as
 coming from a valid sender and provide the necessary identity
-information for that sender. The `Signature` field is a ECC signature
+information for that sender. The `Signature` field is an ECC signature
 over the `ChannelMessage` which can be verified using the user's ECC
 public key; this further strengthens the replay defence of the
 `ChannelMessage`. The validation signature proves their registration
@@ -315,15 +315,22 @@ Here's an example of how a channel user composes a channel message
 containing a `MuteUser` command:
 
 ```
-channel_message = ChannelMessage{
-	Lease: lease_one_week_in_nano_secs,
-	RoundID: roundID,
-	Payload: MuteUser{
-		LeaseEnd: time.Now() + (time.Day * 7), // one week from now
-		ECCPublicKey: bad_user_pub_key,	
-	},
+command_payload = MuteUser{
+	LeaseEnd: time.Now() + (time.Day * 7), // one week from now
+	ECCPublicKey: bad_user_pub_key,	
 }
-channel_message_ciphertext = E(per_message_key, nonce, channel_message)
+alice_channel_message = ChannelMessage{
+	Lease:   lease,
+	RoundID: roundID,
+	Payload: command_payload,
+}
+user_message = UserMessage {
+	Username: "Alice",
+	ECCPublicKey: alice_ecc_public_key,
+	Signature: sign(alice_ecc_private_key, alice_channel_message),
+}
+user_message.ChannelMessage = alice_channel_message
+channel_message_ciphertext = E(per_message_key, nonce, user_message)
 ```
 
 ## Admin Commands
@@ -407,7 +414,7 @@ designated by the specified ECC public key. At initial launch
 
 ### Admin Command Example
 
-Here's an example of how a channel admin would formulate their message
+Here's an example of how a channel admin would compose their message
 in order to mute a specific user:
 
 ```
@@ -422,7 +429,7 @@ channel_message = ChannelMessage{
 channel_message_ciphertext = E_asym(RSA_private_key, channel_message)
 ```
 
-Here's an example of how a channel moderator would formulate their message
+Here's an example of how a channel moderator would compose their message
 in order to mute a specific user:
 
 ```
@@ -439,7 +446,7 @@ channel_message = UserMessage{
 	UsernameLease: one_month,
 }
 
-channel_message_data_to_send = E(per_message_key, channel_message)
+channel_message_data_to_send = E(per_message_key, nonce, channel_message)
 ```
 
 ## Rebroadcasting Admin Commands
@@ -458,37 +465,61 @@ type ReplayCommand {
 
 If a channel admin issues a `MuteUser` command with a `LeaseEnd` time
 specified beyond the three week message storage period it must be
-rebroadcast. Assuming there is a rebroadcasting client member of the
-channel, it would rebroadcast the command like this:
+rebroadcast:
 
 ```
 muteUser = MuteUser{
    LeaseEnd: long_time_from_now,
    ECCPublicKey: naughty_user_ecc_pub_key,
 }
+admin_channel_message = ChannelMessage{
+	Lease:   lease,
+	RoundID: roundID,
+	Payload: muteUser,
+}
+admin_ciphertext = E_asym(RSA_private_key, admin_channel_message)
+```
 
-admin_ciphertext = E_asym(RSA_private_key, )
+Assuming there is a rebroadcasting client member of the
+channel, it would rebroadcast the command like this:
 
-
+```
 replayCommand = ReplayCommand{
-	Command: admin_ciphertext,
+	Payload: admin_ciphertext,
 		
 }
+
+channel_message = ChannelMessage{
+	Lease: eight_week_lease,
+	RoundID: roundID,
+	Payload: replayCommand,
+}
+user_message = UserMessage {
+	Username: "Rebroadcastor",
+	ECCPublicKey: rebroadcastor_ecc_public_key,
+	Signature: sign(rebroadcastor_ecc_private_key, alice_channel_message),
+}
+user_message.ChannelMessage = channel_message
+
+channel_message_data_to_send = E(per_message_key, nonce, user_message)
 ```
 
 
-The entity performing the rebroadcasting should of course rebroadcast the
+The entity performing the rebroadcasting should of course firstly rebroadcast the
 admin's command which bestows said entity's authority to perform rebroadcasting:
 
 ```
-// previously acquired admin ciphertext
-admin_ciphertext = E_asym(RSA_private_key, FUBAR{
-	UpdatePermissions {
-		ECCPublicKey: bob_ecc_pub_key,
-		Commands []string{"ReplayCommand"},
-	}
-})
-	
+channel_message = ChannelMessage{
+	Lease: lease_one_week_in_nano_secs,
+	RoundID: roundID,
+	Payload: UpdatePermissions{
+		LeaseEnd: leaseEnd,
+		ECCPublicKey: rebroadcastor_pub_key,
+   		Commands: []string{"ReplayCommand"},
+	},
+}
+admin_ciphertext = E_asym(RSA_private_key, channel_message)
+
 replayCommand = ReplayCommand{
 	Payload: admin_ciphertext,
 	EccPublicKey: bob_ecc_pub_key,
@@ -497,12 +528,8 @@ replayCommand = ReplayCommand{
 	Lease: lease,	
 }
 	
-toSend = E(per_message_key, replayCommand)
+toSend = E(per_message_key, nonce, replayCommand)
 ```
-
-
-
-
 
 The combination of a `ReplayCommand` which encapsulates an `UpdatePermissions`
 admin command indicates a case where the inner payload must be authenticated
@@ -518,31 +545,38 @@ which signs the encapsulated payload, the RSA encrypted `UpdatePermissions` comm
 Here's an example of a how we compose the replay payload such that it
 replays a `MuteUser` which was initially sent by a moderator, a client
 whose ECC public key was bestowed the authority to use the `MuteUser`
-command via the previous admin command `UpdatePermissions`:
+command via a previous admin command `UpdatePermissions`:
 
 ```
-	mute_user_command = MuteUser{
-		LeasePeriod: lease,
-		ECCPublicKey: mallorys_ecc_pub_key,
-	}
+mute_user_command = MuteUser{
+   	LeasePeriod: lease,
+	ECCPublicKey: mallorys_ecc_pub_key,
+}
 
-	userMessage = UserMessage{
-		RoundID: roundID,
-		Payload: mute_user_command,
-		ECCPublicKey: bob_ecc_pub_key,
-		Username: "BobbyShaftoe",
-		UsernameLease: username_lease,
-	}
+channel_message = ChannelMessage struct {
+	Lease:   lease,
+	RoundID: roundID,
+	Payload: mute_user_command,
+}
 
-	replayCommand = ReplayCommand{
-		Payload: userMessage,
-		EccPublicKey: bob_ecc_pub_key,
-		Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
-		RID: roundID,
-		Lease: lease,	
-	}
+userMessage = UserMessage{
+	ValidationSignature: moderator_validation_sig,
+	Signature: sign(moderator_ecc_priv_key, channel_message),
+	ECCPublicKey: moderator_ecc_pub_key,
+   	Username: "themoderator",
+   	UsernameLease: username_lease,
+}
+userMessage.ChannelMessage = channel_message
+
+replayCommand = ReplayCommand{
+   	Payload: userMessage,
+   	EccPublicKey: rebroadcastor_ecc_pub_key,
+   	Signature: Sign(rebroadcastor_ecc_priv_key, userMessage),
+   	RID: roundID,
+   	Lease: lease,	
+}
 	
-	toSend = E(per_message_key, replayCommand)
+toSend = E(per_message_key, replayCommand)
 ```
 
 However take note that replaying a `MuteUser` command will only be successfully evaluated
@@ -554,59 +588,25 @@ field must contain the string "ReplayCommand".
 The `ReplayCommand` can also be used to encapsulate a RSA encrypted admin command:
 
 ```
-	// previously acquired admin ciphertext
-	admin_ciphertext = E_asym(RSA_private_key, AdminCommand{
-		MuteUser struct{
-			mallorys_public_ecc_key,
-		},
-	})
-
-	replayCommand = ReplayCommand{
-		Payload: admin_ciphertext,
-		EccPublicKey: bob_ecc_pub_key,
-		Signature: Sign(bob_ecc_priv_key, admin_ciphertext),
-		RID: roundID,
-		Lease: lease,	
-	}
-	
-	toSend = E(per_message_key, replayCommand)
-```
-
-
-
-
-
-
-```
-adminMessage = E_asym(userMessage, RSA_private_key)
-
-channel_message_ciphertext = E(per_message_key, ecc_public_key | ecc_signature | payload)
-
-// where payload can consist of either of these:
-
-
-type UserMessage struct {
-	ChannelMessage
-	
-	Username: string,
-	ECCPublicKey []byte
-	UsernameLease: lease,
+mute_user = MuteUser{
+	LeaseEnd: leaseEndTime,
+	ECCPublicKey: mallorys_public_ecc_key,
 }
 
-type ReplayCommand struct {
-	Payload []byte
-	ECCPublicKey []byte
-	Signature []byte
-	RID RoundID
-	Lease []byte
+channel_message = ChannelMessage{
+	Lease:   lease,
+	RoundID: roundID,
+	Payload: mute_user,
 }
+
+admin_ciphertext = E_asym(RSA_private_key, channel_message)
+
+replayCommand = ReplayCommand{
+	Payload: admin_ciphertext,
+}
+
+toSend = E(per_message_key, nonce, replayCommand)
 ```
-
-
-
-
-
-
 
 ## Security Considerations
 
