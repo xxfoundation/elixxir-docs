@@ -13,15 +13,9 @@ Here we discuss some design details of the message transport and pickup.
 ## Introduction
 
 As was explained in the [architectural overview](architecture.md),
-the xx network is meant to be a general purpose mix network
+the XX Network is meant to be a general purpose mix network
 that can support a wide variety of applications. The clients connect
-directly to the gateways for all their network interactions. The first
-application to be developed by the Elixxir development team is a chat
-application that supports one on one and group chat. For the purpose
-of persisting received messages from the mixnet, the gateways interact
-with each other in a gossip protocol so that all the gateways receive a
-copy of each message. Later clients can retrieve their messages from
-any of the gateways.
+directly to the gateways for all their network interactions.
 
 The full end to end path looks like this:
 
@@ -29,26 +23,43 @@ The full end to end path looks like this:
 
 Clients interact with a random Gateway in the network which in turn
 proxies outbound messages to the correct Gateway associated with
-the destination mix cascade. Currently mix cascades have five mix nodes.
-The last mix node sends the message to it's Gateway.
+the destination mix cascade. Currently mix cascades have five mix nodes
+and five Gateways, each mix node has a Gateway associated with it.
+The last mix node sends the mix cascade output messages to it's Gateway
+which in turn sends the messages to the rest of the mix cascade's Gateways
+for storage.
 
-This transport protocol does not require all communication parties to
-be online at the same time. Messages are queued for up to two weeks in
-the gateway persistent message storage.  Later on, the recipient
-client can retrieve their messages by interacting with any of the
-gateways. Each gateway stores a KnownRounds buffer indicating for each
-round if they store messages for that round or not.
+Messages are queued for up to three weeks in the gateway persistent
+message storage. Later on, the recipient client can retrieve their
+messages by interacting with any of the gateways.
 
-These message IDs are generated deterministically by the sender and
-recipient clients such that there are many message ID collisions with
-other clients. When clients query for messages the gateways sends a
-bloom filter which the clients use to determine which the message IDs
-of messages persisted.
+Clients send their ephemeral recipient ID to the Gateway which responds with:
 
-The gateway nodes also have support for a plugin system so additional
-mixnet services may be added. That is, instead of delivering a message
-to a message spool, the message is instead passed on to the mixnet
-service plugin which then can determine the fate of the message.
+* known rounds
+* bloom filter
+
+Each gateway stores a KnownRounds buffer indicating for each round if
+they store messages for that round or not. The bloom filter is
+specific to the ephemeral recipient ID and indicates from which rounds
+the given ephemeral recipient ID received messages.
+
+The client knows what rounds it has checked in the past. It finds the
+set exclusion between that list and known rounds. It then looks up
+all members of that exclusion in the bloom filter - which returns true
+if messages were received, false if they were not. If a message was
+received, the client gets the gateways associated with the round
+either from ram, or it isn't present asks any gateway. It then
+randomly chooses a gateway in the round and asks it for any messages
+received on the ephemeral recipient ID in that round which are
+returned to it.
+
+The address space for ephemeral recipient IDs is intentionally small
+so as to create collisions such that multiple client would be making
+use of the same ephemeral recipient ID.
+
+The client then analyzes the received messages and compares message
+IDs with deterministically generated message IDs so as to avoid trail
+decryption.
 
 ### Pseudo Code Cryptographic Function Glossary
 
