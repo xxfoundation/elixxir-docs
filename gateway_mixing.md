@@ -37,5 +37,6 @@ allowed? Are the delays between request and response always the same?
 Do we have appropriate decoy traffic to mimick each of the observable
 traffic patterns? Ideally all the traffic looks the same and only one
 type of decoy traffic is used. This is ideal because the client design
-is simple. Multiple traffic type can quickly complexify client design.
+is simple. Multiple traffic types can easily make the client design
+much more complicated.
 
