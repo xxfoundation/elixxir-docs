@@ -62,11 +62,65 @@ implemented with either continuous time mixing as in the case of
 Either way there must be some mixing delay added in order to not allow
 for trivial timing correlations between input and output messages.
 
+
 ## Traffic Padding
+
+All gRPC message types except those having to do
+with the transport of NDF data shall be encapsulated
+with the following type:
+
+```
+message AuthenticatedPaddedMessage {
+    bytes ID = 1;
+    bytes Signature = 2;
+    bytes Token = 3;
+    ClientID Client = 4;
+    bytes Payload = 5;
+	bytes Padding = 6;
+}
+```
+
+The `Payload` field shall contain the serialized gRPC message; and given
+the length of this message a padding length must be calculated.
+
+
+```
+padding_len = GetPaddingLength(payload)
+padding = make([]byte, padding_len)
+```
+
+Therefore all instances of `AuthenticatedPaddedMessage`
+are composed such that they are the same length in bytes.
+
 
 ## Inner Gateway Payload Encryption Decryption
 
+Clients encrypt the inner payload, this payload is proxied
+to the destination Gateway which does the decryption:
+
+```
+shared_key = DH(servers_pub_key, clients_priv_key)
+ciphertext = AEAD_ENCRYPT(shared_key, nonce, payload)
+
+transmission_tuple = client_pub_key, ciphertext, nonce
+```
+These fields are then serialized into this protobuf type and sent to the
+proxying Gateway:
+
+```
+message EncryptedMessage {
+	bytes Payload = 1;
+	bytes Nonce = 2;
+	bytes PublicKey = 3;
+}
+```
+
+
 ## Mix Strategy
 
+Timed batch mix strategies might be the lowest latency possible while still
+providing good entropic mixing. However we might be interested in blending
+different latency traffic which is discussed here:
 
+[Blending different latency traffic with alpha-mixing](https://www.freehaven.net/doc/alpha-mixing/alpha-mixing.pdf)
 
