@@ -51,3 +51,11 @@ for Mix-Networks](https://eprint.iacr.org/2021/1685.pdf) however their
 design doesn't take into account our architecture, network topology or
 existing Gateway gossip protocol and so we have decided that the
 design articulated in this document is a more appropriate solution.
+That being said, a funnel node as described in their approach would
+essentially be a node that mixes all the traffic traversing the
+network for a specific time duration. This could potentially be
+implemented with either continuous time mixing as in the case of
+`Stop and Go` and `Poisson` mix strategies or a batch mix strategy.
+
+
+
