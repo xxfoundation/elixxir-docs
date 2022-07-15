@@ -53,9 +53,20 @@ existing Gateway gossip protocol and so we have decided that the
 design articulated in this document is a more appropriate solution.
 That being said, a funnel node as described in their approach would
 essentially be a node that mixes all the traffic traversing the
-network for a specific time duration. This could potentially be
+network for a specific time duration; and does so without performing
+any cryptographic operations, instead relying on TLS for bitwise unlinkability.
+
+This could potentially be
 implemented with either continuous time mixing as in the case of
 `Stop and Go` and `Poisson` mix strategies or a batch mix strategy.
+Either way there must be some mixing delay added in order to not allow
+for trivial timing correlations between input and output messages.
+
+## Traffic Padding
+
+## Inner Gateway Payload Encryption Decryption
+
+## Mix Strategy
 
 
 
