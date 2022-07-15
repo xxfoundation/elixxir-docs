@@ -40,3 +40,14 @@ type of decoy traffic is used. This is ideal because the client design
 is simple. Multiple traffic types can easily make the client design
 much more complicated.
 
+In addition to the aforementioned client decoy traffic, the Gateways
+send gossip messages to the other Gateways. If these messages are
+padded to the same size as messages originating from clients then it
+increases mix entropy on the Gateway mixing just like decoy traffic
+increases mix entropy.
+
+A similar technique is used in [Divide and Funnel: a Scaling Technique
+for Mix-Networks](https://eprint.iacr.org/2021/1685.pdf) however their
+design doesn't take into account our architecture, network topology or
+existing Gateway gossip protocol and so we have decided that the
+design articulated in this document is a more appropriate solution.
