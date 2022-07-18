@@ -11,6 +11,27 @@ client interactions with Gateways are hidden. We not only
 hide the type of interaction but also the destination
 Gateway the interaction is taking place with.
 
+### Pseudo Code Cryptographic Function Glossary
+
+The following sections are populated with pseudo code examples which
+are used to explain sections of our cryptographic protocols. It is
+hoped that this glossary will help you understand the pseudo code.
+
+* |: byte concatenation
+
+* H(x): H is a cryptographic hash function.
+
+* HMAC(key, data): HMAC uses the given key to compute an HMAC over the given data.
+
+* DH(my_private_key, partner_public_key):  
+  Diffiehellman function used to calculate a shared secret.
+
+* AEAD_ENCRYPT(key, nonce, payload):  
+  Given a key and a nonce encrypt the payload with an AEAD cipher.
+
+* AEAD_DECRYPT(key, nonce, ciphertext):  
+  Given a key and a nonce decrypt the ciphertext with an AEAD cipher.
+
 ## Introduction
 
 By hiding the Gateway that a client is interacting with, we increase
@@ -22,14 +43,21 @@ slot.
 
 ![gateway mixing diagram](images/gateway_mixing.png)
 
-The mixing takes place on the proxy Gateway hop however no
-cryptographic operations are performed. The bitwise unlinkability
-between input and output messages is achieved by relying on our link
-layer protocol, in this case TLS. Of course, ALL Gateway protocol
-messages must be padded to be equal length. Likewise all Gateway
-protocol messages must have similar looking traffic patterns or some
-small number of such traffic patterns should be mimicked by the decoy
-traffic.
+The client `Senders` on the left hand side of the diagram send their
+payloads to a randomly selected Gateway which performs the mixing and
+then proxies each payload to their destination Gateway. The inner
+payload is encrypted by the sending client and decrypted by the
+destination Gateway. The mixing Gateway does not perform any
+cryptographic operations, similar to a `funnel node` as described in
+[Divide and Funnel: a Scaling Technique for Mix-Networks](https://eprint.iacr.org/2021/1685.pdf).
+
+
+The mixing Gateways provide bitwise unlinkability between input and
+output messages by relying on our link layer protocol, in this case
+TLS. Of course, ALL Gateway protocol messages must be padded to be
+equal length. Likewise all Gateway protocol messages must have similar
+looking traffic patterns or some small number of such traffic patterns
+should be mimicked by the decoy traffic.
 
 In particular we want to look at the ratio of sent messages to
 received messages. Are they always equal or are one-way messages
@@ -41,27 +69,10 @@ is simple. Multiple traffic types can easily make the client design
 much more complicated.
 
 In addition to the aforementioned client decoy traffic, the Gateways
-send gossip messages to the other Gateways. If these messages are
+send gossip messages to one another. If these messages are
 padded to the same size as messages originating from clients then it
 increases mix entropy on the Gateway mixing just like decoy traffic
 increases mix entropy.
-
-A similar technique is used in [Divide and Funnel: a Scaling Technique
-for Mix-Networks](https://eprint.iacr.org/2021/1685.pdf) however their
-design doesn't take into account our architecture, network topology or
-existing Gateway gossip protocol and so we have decided that the
-design articulated in this document is a more appropriate solution.
-That being said, a funnel node as described in their approach would
-essentially be a node that mixes all the traffic traversing the
-network for a specific time duration; and does so without performing
-any cryptographic operations, instead relying on TLS for bitwise unlinkability.
-
-This could potentially be
-implemented with either continuous time mixing as in the case of
-`Stop and Go` and `Poisson` mix strategies or a batch mix strategy.
-Either way there must be some mixing delay added in order to not allow
-for trivial timing correlations between input and output messages.
-
 
 ## Traffic Padding
 
@@ -115,7 +126,6 @@ message EncryptedMessage {
 }
 ```
 
-
 ## Mix Strategy
 
 Timed batch mix strategies might be the lowest latency possible while still
@@ -124,3 +134,10 @@ different latency traffic which is discussed here:
 
 [Blending different latency traffic with alpha-mixing](https://www.freehaven.net/doc/alpha-mixing/alpha-mixing.pdf)
 
+Likewise mixing could potentially be implemented with a continuous
+time mixing as in the case of `Stop and Go` and `Poisson` mix
+strategies. Either way there must be some mixing delay added in order
+to not allow for trivial timing correlations between input and output
+messages.
+
+All traffic being mixed, even Gateway gossip traffic, must incur mixing latency.
