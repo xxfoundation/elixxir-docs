@@ -76,55 +76,135 @@ increases mix entropy.
 
 ## Traffic Padding
 
-All gRPC message types except those having to do
-with the transport of NDF data shall be encapsulated
-with the following type:
+All gRPC messages which the client sends to the destination Gateway
+will be serialized, encrypted and encapsulated by the
+`AuthenticatedPaddedMessage` message type:
 
 ```
 message AuthenticatedPaddedMessage {
-    bytes ID = 1;
-    bytes Signature = 2;
-    bytes Token = 3;
-    ClientID Client = 4;
-    bytes Payload = 5;
+	bytes IngressAuth = 1;
+	bytes ClientID = 2;
+	bytes Timestamp = 3;
+	bytes destGW = 4
+	bytes Payload = 5;
 	bytes Padding = 6;
 }
 ```
 
 The `Payload` field shall contain the serialized gRPC message; and given
-the length of this message a padding length must be calculated.
+the length of this message a padding length must be calculated. We must
+also take care to pad the Gateway gossip messages to the same length
+as the `AuthenticatedPaddedMessage` messages.
 
+## Ingress Gateway Message Handling
 
-```
-padding_len = GetPaddingLength(payload)
-padding = make([]byte, padding_len)
-```
-
-Therefore all instances of `AuthenticatedPaddedMessage`
-are composed such that they are the same length in bytes.
-
-
-## Inner Gateway Payload Encryption Decryption
-
-Clients encrypt the inner payload, this payload is proxied
-to the destination Gateway which does the decryption:
+Ingress message processesing does not cryptographically transform the message.
+The HMAC is used to authorize and authenticate the message:
 
 ```
-shared_key = DH(servers_pub_key, clients_priv_key)
-ciphertext = AEAD_ENCRYPT(shared_key, nonce, payload)
+func checkAuth(AuthMsg, Timestamp, DestGW, Payload []byte) bool {
+	if len(AuthMsg) != rightsize.. { error printed and return false }
+	nonce = AuthMsg[0:24]
 
-transmission_tuple = client_pub_key, ciphertext, nonce
-```
-These fields are then serialized into this protobuf type and sent to the
-proxying Gateway:
+	clientID = AuthMsg[24:24+32]
+	myHMAC = AuthMsg[24+32:]
 
-```
-message EncryptedMessage {
-	bytes Payload = 1;
-	bytes Nonce = 2;
-	bytes PublicKey = 3;
+	clientGWSharedSecret = KDF(ClientID, MyGWSecret)
+	oneTimeKey = KDF(ClientGWSharedSecret, Nonce)
+
+	dataToHMAC = make([]byte, len(Timestamp) + len(DestGW) + len(Payload)) 
+	copy(dataToHMAC, Timestamp)
+	copy(dataToHMAC[len(Timestamp):], DestGW)
+	copy(dataToHMAC[len(Timestamp) + len(DestGW):], Payload)
+ 
+	HMACToCheck = HMAC(OneTimeKey, dataToHMAC) 
+
+	return myHMAC == HMACToCheck
+}
+
+func checkTimestamp(Timestamp []byte) bool {
+	if len(Timestamp) != … log err and return false
+
+	// Unmarshal timestamp…
+
+	// If timestamp older than threshold (5 mins) return FAlse..
+
+	// else return true
+}
+
+func proc(msg) {
+	if (len(msg.Auth) + len(msg.DestGW) + len(msg.Payload) + len(msg.Padding) != packetSize { 
+	// log error
+    // drop packet
+	}
+	if !checkTimestamp(msg.Timestamp) {
+	// log error
+    // drop packet
+	}
+	if !checkAuth(msg.IngressAuth, msg.Timestamp, msg.DestGW, msg.Payload) {
+	// log error
+	// drop packet
+	}
+
+	// Payload is ignored, that is handled by the destination!
+	// Forward to msg.DestGW
+	send(msg.DestGW, msg)
 }
 ```
+
+## Destination Gateway Message Handling
+
+Note that the Timestamp field is reused and authenticated by the
+encrypted inner payload; It is the cleartext Additional Data field,
+which is authenticated but not encrypted by our AEAD cipher:
+
+```
+func proc(msg) {
+	if (len(msg.Auth) + len(msg.DestGW) + len(msg.Payload) + len(msg.Padding) != packetSize { 
+	// Log ERROR UNTRUSTWORTHY INGRESS GATEWAY!!!
+	// Drop packet
+	}
+	if !checkTimestamp(msg.Timestamp) {
+	// Drop packet
+	}
+
+	encMsg := EncryptedMessage{}
+	err := encMsg.Unmarshal(msg.Payload)
+	if err != nil {
+	// print error
+	// Drop
+	}
+
+	// Function call model (which gives full stack trace on error)
+	procEncMsg(msg.ClientID, Timestamp, encMsg)
+}
+```
+
+## Destination Gateway Payload Decryption
+
+```
+func procEncrMsg(ClientID, Timestamp, msg)
+	encMsg := EncryptedMessage{}
+	err := encMsg.Unmarshal(msg)
+	if err != nil { … } 
+
+	//              vvv - this is the shared secret part
+	ClientGWSharedSecret = KDF(ClientID, MyGWSecret)
+
+	msgBytes := AEADDecrypt(encMsg.Ciphertext, encMsg.Nonce, ClientGWSharedSecret, 
+		Timestamp)   // <<-- Option 1: Timestamp passed in as unencrypted authenticated data 
+                     // which is used to validate message and timestamp
+  // Option 2: Pass timestamp into the KDF. 
+
+
+  procMsg(ClientID, Timestamp, msgBytes)
+}
+```
+
+## Destination Gateway Decrypted Payload Processing
+
+This messaging handler only needs to know how to process messages
+sent by the client. Gateway gossip messages will use a different handler.
 
 ## Mix Strategy
 
