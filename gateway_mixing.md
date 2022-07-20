@@ -48,12 +48,14 @@ payloads to a randomly selected Gateway which performs the mixing and
 then proxies each payload to their destination Gateway. The inner
 payload is encrypted by the sending client and decrypted by the
 destination Gateway. The mixing Gateway does not perform any
-cryptographic operations, similar to a `funnel node` as described in
-[Divide and Funnel: a Scaling Technique for Mix-Networks](https://eprint.iacr.org/2021/1685.pdf).
-
+cryptographic transformations, similar to a `funnel node` as described
+in [Divide and Funnel: a Scaling Technique for
+Mix-Networks](https://eprint.iacr.org/2021/1685.pdf).  However in our
+case a cryptographic authentication operation is performed twice; once
+by the mixing Gateway and another time by the destination Gateway.
 
 The mixing Gateways provide bitwise unlinkability between input and
-output messages by relying on our link layer protocol, in this case
+output messages by relying on our mixnet link layer protocol, in this case
 TLS. Of course, ALL Gateway protocol messages must be padded to be
 equal length. Likewise all Gateway protocol messages must have similar
 looking traffic patterns or some small number of such traffic patterns
