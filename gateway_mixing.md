@@ -189,6 +189,7 @@ func proc(msg) {
 
 ```
 func procEncrMsg(ClientID, Timestamp, msg)
+{
 	encMsg := EncryptedMessage{}
 	err := encMsg.Unmarshal(msg)
 	if err != nil { … } 
@@ -199,10 +200,9 @@ func procEncrMsg(ClientID, Timestamp, msg)
 	msgBytes := AEADDecrypt(encMsg.Ciphertext, encMsg.Nonce, ClientGWSharedSecret, 
 		Timestamp)   // <<-- Option 1: Timestamp passed in as unencrypted authenticated data 
                      // which is used to validate message and timestamp
-  // Option 2: Pass timestamp into the KDF. 
+					 // Option 2: Pass timestamp into the KDF. 
 
-
-  procMsg(ClientID, Timestamp, msgBytes)
+	procMsg(ClientID, Timestamp, msgBytes)
 }
 ```
 
