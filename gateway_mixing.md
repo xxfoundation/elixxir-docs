@@ -139,16 +139,16 @@ func checkTimestamp(Timestamp []byte) bool {
 
 func proc(msg) {
 	if (len(msg.Auth) + len(msg.DestGW) + len(msg.Payload) + len(msg.Padding) != packetSize { 
-	// log error
-    // drop packet
+	// Log error
+    // Drop packet
 	}
 	if !checkTimestamp(msg.Timestamp) {
-	// log error
-    // drop packet
+	// Log error
+    // Drop packet
 	}
 	if !checkAuth(msg.IngressAuth, msg.Timestamp, msg.DestGW, msg.Payload) {
-	// log error
-	// drop packet
+	// Log error
+	// Drop packet
 	}
 
 	// Payload is ignored, that is handled by the destination!
@@ -166,7 +166,7 @@ which is authenticated but not encrypted by our AEAD cipher:
 ```
 func proc(msg) {
 	if (len(msg.Auth) + len(msg.DestGW) + len(msg.Payload) + len(msg.Padding) != packetSize { 
-	// Log ERROR UNTRUSTWORTHY INGRESS GATEWAY!!!
+	// Log Error UNTRUSTWORTHY INGRESS GATEWAY!!!
 	// Drop packet
 	}
 	if !checkTimestamp(msg.Timestamp) {
@@ -176,7 +176,7 @@ func proc(msg) {
 	encMsg := EncryptedMessage{}
 	err := encMsg.Unmarshal(msg.Payload)
 	if err != nil {
-	// print error
+	// Log error
 	// Drop
 	}
 
