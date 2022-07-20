@@ -52,7 +52,10 @@ cryptographic transformations, similar to a `funnel node` as described
 in [Divide and Funnel: a Scaling Technique for
 Mix-Networks](https://eprint.iacr.org/2021/1685.pdf).  However in our
 case a cryptographic authentication operation is performed twice; once
-by the mixing Gateway and another time by the destination Gateway.
+by the mixing Gateway and another time by the destination
+Gateway. (note: replacing TLS with Noise XX would allow us to do
+client authentication on the connection before any message is sent, thus
+simplifying this cryptographic protocol)
 
 The mixing Gateways provide bitwise unlinkability between input and
 output messages by relying on our mixnet link layer protocol, in this case
