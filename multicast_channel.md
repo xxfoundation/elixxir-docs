@@ -102,7 +102,8 @@ type ChannelDescriptor struct {
 	Name        string
 	Description string
 	Salt        []byte
-	RsaPubKey   *rsa.PublicKey
+	RsaPubKeyHash  []byte
+	Secret      []byte
 }
 ```
 
@@ -239,6 +240,10 @@ for encryption:
 
 ```
 cyphertext = E_asym(RSA_private_key, plaintext)
+payload = cyphertext|RSAPubKey
+//ecrypt the payload with symmetric encryption
+ecrPayload = E(per_message_key, computed_nonce, payload)
+
 ```
 
 The channel members by definition are in possession of the channel's
