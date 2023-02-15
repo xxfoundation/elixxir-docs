@@ -1,7 +1,7 @@
 # The xx network message pickup design
 
 Ben Wenger  
-Rick Carback  
+Richard T. Carback III  
 David Stainton  
 
 *version 0*

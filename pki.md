@@ -2,7 +2,7 @@
 # Elixxir Mixnet PKI
 
 Ben Wenger  
-Rick Carback  
+Richard T. Carback III  
 David Stainton  
 
 ## Introduction

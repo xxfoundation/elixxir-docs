@@ -1,7 +1,7 @@
 
 # Elixxir mix network wire protocol
 
-Rick Carback  
+Richard T. Carback III  
 David Stainton  
 
 ## Abstract

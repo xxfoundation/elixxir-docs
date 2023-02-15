@@ -2,7 +2,7 @@
 # Elixxir Mix Network Threat Model
 
 Ben Wenger  
-Rick Carback  
+Richard T. Carback III  
 David Stainton  
 
 ## Introduction

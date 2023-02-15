@@ -2,7 +2,7 @@
 # Elixxir Mixnet Architectural Overview
 
 Ben Wenger  
-Rick Carback  
+Richard T. Carback III  
 David Stainton  
 
 ## Context for the Elixxir Mixnet

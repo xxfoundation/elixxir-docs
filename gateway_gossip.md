@@ -1,7 +1,7 @@
 # The xx network Gateway Gossip Protocol
 
 Ben Wenger  
-Rick Carback  
+Richard T. Carback III  
 David Stainton  
 
 ## Gateway Gossip Protocol Overview
