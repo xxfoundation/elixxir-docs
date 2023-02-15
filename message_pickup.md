@@ -1,6 +1,6 @@
 # The xx network message pickup design
 
-Ben Wenger  
+Benjamin Wenger  
 Richard T. Carback III  
 David Stainton  
 

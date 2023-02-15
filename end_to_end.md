@@ -1,7 +1,7 @@
 
 # The xx network End To End Cryptographic Protocol
 
-Ben Wenger  
+Benjamin Wenger  
 Richard T. Carback III  
 David Stainton  
 

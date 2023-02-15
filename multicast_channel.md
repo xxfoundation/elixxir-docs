@@ -1,6 +1,6 @@
 # The xx Network Multicast Channel Design
 
-Ben Wenger  
+Benjamin Wenger  
 Richard T. Carback III  
 David Stainton  
 

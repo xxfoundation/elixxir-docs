@@ -1,6 +1,6 @@
 ## XX Network Gateway Mixing
 
-Ben Wenger  
+Benjamin Wenger  
 Richard T. Carback III  
 David Stainton  
 

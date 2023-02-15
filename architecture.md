@@ -1,7 +1,7 @@
 
 # Elixxir Mixnet Architectural Overview
 
-Ben Wenger  
+Benjamin Wenger  
 Richard T. Carback III  
 David Stainton  
 
