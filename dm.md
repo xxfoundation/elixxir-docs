@@ -21,12 +21,13 @@ DMs make several trade-offs for convenience:
   traditional public key 2048 or 4096 bit keys to save space in the
   packets.
 * Instead of a [cMix Reception ID](message_pickup.md), DMs use derived
-  identities based off the ECC public key.
-* No recipient forward secrecy because each message is encrypted to
-  the public key of the recipient. If an attacker learns a private
-  key, through device compromise or other means, they can read all
-  messages received by a user. This includes learning sender reply
-  information in the decrypted message and impersonating the recipient
+  identities based off the ECDSA X25519 public key.
+* No recipient forward secrecy is provided, because each message is
+  encrypted to the public key of the recipient. If an attacker learns
+  a private key, through device compromise or other means, they can
+  read all messages received by a user. This includes learning sender
+  reply information in the decrypted message and impersonating the
+  recipient
 
 To perform one-way non-interactive handshakes, DMs include an
 ephemeral public key and transmit the sender public key under
@@ -48,7 +49,7 @@ as follows:
 receptionID = H(ed25519PubKey | idToken) | 0x03
 ```
 
-The `idToken`, sometimes called the `dmToken` is a random nonce which
+The `idToken`, sometimes called the `dmToken`, is a random nonce which
 can be changed periodically. For example, it could be changed when
 leaving a channel to prevent further DMs from users of that channel.
 
@@ -86,9 +87,12 @@ DMs use the following Noise Protocol Name:
 Noise_X_25519_ChaChaPoly_BLAKE2s
 ```
 
-Additionally, the prologue is set to the current protocol version (`0x0 0x0`
-at the time of this writing). Full details on Noise Protocol syntax
-can be found in the [spec](https://noiseprotocol.org/noise.html).
+This noise protocol uses ECDH asymmetric encryption with
+XChaCha20Poly1305 symmetric encryption and Blake2s hashes inside of the
+protocol.  Additionally, the prologue is set to the current DM protocol
+version (`0x0 0x0` at the time of this writing). Full details on Noise
+Protocol and the syntax used above can be found in the
+[noise specification document](https://noiseprotocol.org/noise.html).
 
 ## Direct Messages
 
@@ -114,7 +118,7 @@ These fields are used as follows:
   match the round in which the message is sent, it is dropped.
 * `DMToken` is used so the recipient can generate the reception ID to
   respond to the sender.
-* `Payload` the actual direct message contents.
+* `Payload` is the actual direct message contents.
 * `Nonce` is set in the client code when the message is created. It
   isn't checked on receipt and is used to ensure the encryption is
   always unique.
@@ -141,8 +145,9 @@ Where:
 We include an HMAC in the encryption, the `bengerCode`, to prove that
 the sender knows the private key of the public key included in the
 message. This prevents a third party from sending someone elses public
-key and tricking the user into thinking the sender of a given message
-is someone else.
+key, making it appear to the user that the true the sender of a given
+message is someone else. It is similar to the sender signing the message
+they sent with their static public key.
 
 The plaintext is encrypted and final payload is prepared as follows:
 
@@ -153,13 +158,13 @@ ciphertext = NoiseX.Encrypt(key, plaintext)
 cMixPayload = ephemeralPublicKey | ciphertext
 ```
 
-This `cMixPayload` is what is sent over cMix to the recipient
+This `cMixPayload` is what is sent over cMix to the recipient ID,
 [derived](./dm.md#One-way-Non-Interactive-Handshake) from the
 `ReceiverStaticPublicKey` and `idToken`. To Decrypt, the above is
 reversed by separating the ephemeral public key from the ciphertext,
-decrypting it, checking the bengerCode authentication code, and
-returning the SenderStaticPublicKey and message contents to the
-recipient.
+decrypting the ciphertext, reading the sender static public key,
+checking the bengerCode authentication code, and returning the
+SenderStaticPublicKey and message contents to the recipient.
 
 Once decrypted, the recipient has all of the data (the
 `SenderStaticPublicKey` and `idToken`) to respond to the direct
@@ -195,9 +200,9 @@ messages to themselves using known secrets. If this is done, 2
 messages would be sent from the client in quick succession (one to the
 recipient, one to the sender). This could create a usage pattern when
 many messages are sent at once. Such patterns exist for many other
-subsystems (e.g., file transfer), but this would show two different
-recipients on the output each time. Clients should take care to preven
-this from happening.
+subsystems (e.g., file transfer), although this would show two
+different recipients on the output each time. This is also mitigated
+by ID collisions.
 
 In conclusion, DMs are a lower-security option to communicate with
 unknown network participants from channels and other mechanisms. It
