@@ -1,7 +1,7 @@
 
 # Elixxir Mix Network Threat Model
 
-Ben Wenger  
+Benjamin Wenger  
 Richard T. Carback III  
 David Stainton  
 
@@ -214,7 +214,7 @@ message slots except that of the target message.
 
 Gateway must accept messages for all cascades.
 
-Also Ben Wenger describes a future cMix variation:
+Also Benjamin Wenger describes a future cMix variation:
 
 Instead of having just the first node collect messages to input into
 the cascade, you have every node in the team collect 1/teamsize of the
